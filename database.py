@@ -1,13 +1,14 @@
 import sqlite3
 import logging
 from typing import Optional, List, Dict
+import polars as pl
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class DatabaseManager:
+class DatabaseManager(object):
     def __init__(self, db_path: str = "database.db"):
         self.db_path = db_path
 
@@ -15,7 +16,7 @@ class DatabaseManager:
                      primary_key: str = None, foreign_keys: List[Dict] = None,
                      constraints: List[str] = None) -> bool:
         """
-        Универсальная функция для создания таблицы
+        Функция для создания таблицы
 
         Args:
             table_name (str): Название таблицы
@@ -148,6 +149,134 @@ class DatabaseManager:
             logger.error(f"Ошибка удаления таблицы '{table_name}': {e}")
             return False
 
+    def add_dataframe_to_table(self, df: pl.DataFrame, table_name: str,
+                               if_exists: str = "append",
+                               batch_size: int = 1000) -> bool:
+        """
+        Добавляет DataFrame Polars в таблицу SQL
+
+        Args:
+            df (pl.DataFrame): DataFrame Polars для добавления
+            table_name (str): Название таблицы в базе данных
+            if_exists (str): Действие при существующей таблице:
+                            - "append": добавить данные (по умолчанию)
+                            - "replace": удалить и пересоздать таблицу
+            batch_size (int): Размер батча для вставки данных
+
+        Returns:
+            bool: Успешно ли выполнена операция
+        """
+
+        if df.is_empty():
+            logger.warning("DataFrame пустой, нечего добавлять")
+            return True
+
+        # Проверяем существование таблицы
+        table_exists = self.table_exists(table_name)
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # Если таблица существует и нужно заменить
+                if table_exists and if_exists == "replace":
+                    logger.info(f"Пересоздание таблицы '{table_name}'")
+                    self.drop_table(table_name)
+                    table_exists = False
+
+                # Если таблицы нет - создаем
+                if not table_exists:
+                    # Создаем схему таблицы на основе типов данных Polars
+                    columns = {}
+                    for col in df.columns:
+                        col_type = df[col].dtype
+
+                        # Преобразование типов Polars в SQLite
+                        if col_type in [pl.Int8, pl.Int16, pl.Int32, pl.Int64, pl.UInt8, pl.UInt16, pl.UInt32,
+                                        pl.UInt64]:
+                            sql_type = "INTEGER"
+                        elif col_type in [pl.Float32, pl.Float64]:
+                            sql_type = "REAL"
+                        elif col_type == pl.Boolean:
+                            sql_type = "INTEGER"  # SQLite не имеет типа BOOLEAN
+                        elif col_type == pl.Date:
+                            sql_type = "TEXT"  # Храним как текст в формате YYYY-MM-DD
+                        elif col_type == pl.Datetime:
+                            sql_type = "TEXT"  # Храним как текст
+                        elif col_type == pl.Utf8:
+                            sql_type = "TEXT"
+                        else:
+                            sql_type = "TEXT"  # По умолчанию TEXT
+
+                        columns[col] = sql_type
+
+                    # Создаем таблицу
+                    if not self.create_table(table_name, columns):
+                        logger.error(f"Не удалось создать таблицу '{table_name}'")
+                        return False
+
+                # Получаем список столбцов существующей таблицы
+                table_columns = self.get_table_columns(table_name)
+
+                # Проверяем соответствие столбцов
+                df_columns = df.columns
+                missing_columns = set(df_columns) - set(table_columns)
+                extra_columns = set(table_columns) - set(df_columns)
+
+                if missing_columns:
+                    logger.warning(f"В таблице отсутствуют столбцы: {missing_columns}")
+                    # Используем только столбцы, которые есть в таблице
+                    df_columns_to_use = [col for col in df_columns if col in table_columns]
+                    df = df.select(df_columns_to_use)
+                elif extra_columns:
+                    logger.warning(f"В таблице есть лишние столбцы: {extra_columns}")
+
+                # Подготавливаем данные для вставки
+                data_to_insert = []
+                for row in df.iter_rows(named=True):
+                    # Конвертируем специальные типы данных
+                    processed_row = {}
+                    for col, value in row.items():
+                        if value is None:
+                            processed_row[col] = None
+                        elif isinstance(value, (pl.Date, pl.Datetime)):
+                            processed_row[col] = str(value)
+                        elif isinstance(value, bool):
+                            processed_row[col] = int(value)
+                        else:
+                            processed_row[col] = value
+                    data_to_insert.append(processed_row)
+
+                # Вставляем данные батчами
+                if data_to_insert:
+                    columns_list = list(data_to_insert[0].keys())
+                    placeholders = ", ".join(["?"] * len(columns_list))
+                    columns_str = ", ".join(columns_list)
+
+                    insert_sql = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
+
+                    cursor = conn.cursor()
+
+                    # Вставка батчами для больших DataFrame
+                    for i in range(0, len(data_to_insert), batch_size):
+                        batch = data_to_insert[i:i + batch_size]
+                        batch_values = [tuple(row[col] for col in columns_list) for row in batch]
+
+                        try:
+                            cursor.executemany(insert_sql, batch_values)
+                            conn.commit()
+                            logger.info(
+                                f"Успешно добавлено {len(batch)} записей в таблицу '{table_name}' (батч {i // batch_size + 1})")
+                        except sqlite3.Error as e:
+                            conn.rollback()
+                            logger.error(f"Ошибка при вставке батча {i // batch_size + 1}: {e}")
+                            return False
+
+                logger.info(f"Успешно добавлено {len(data_to_insert)} записей в таблицу '{table_name}'")
+                return True
+
+        except Exception as e:
+            logger.error(f"Ошибка при добавлении DataFrame в таблицу '{table_name}': {e}")
+            return False
+
 
 if __name__ == '__main__':
     test = DatabaseManager()
@@ -156,5 +285,8 @@ if __name__ == '__main__':
     #                            'mimimi': 'TEXT'},
     #                   primary_key='id',
     #                   )
-    test.drop_table(table_name='test_table')
+    # test.drop_table(table_name='test_table')
+    data = {"col1": [0, 2], "col2": [3, 7]}
+    df2 = pl.DataFrame(data, schema={"col1": pl.Float32, "col2": pl.Int64})
+    test.add_dataframe_to_table(df=df2, table_name='test')
 
