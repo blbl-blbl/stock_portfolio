@@ -25,8 +25,8 @@ class Portfolio(object):
             print(e)
             return None
 
-
-    def excel_check(self, df: pl.DataFrame):
+    @staticmethod
+    def excel_check(df: pl.DataFrame):
         """
         Проверка файла Excel на соответствие нужной структуре
         Нужная структура:
@@ -35,13 +35,14 @@ class Portfolio(object):
             - 3 столбец: операция с бумагой (buy / sell / купить / продать)
             - 4 столбец: количество бумаг (в штуках, НЕ в лотах)
             - 5 столбец: цена по которой была операция
+
+        :return: DataFrame Polars с унифицированными столбцами и правильными типами данных
         """
 
-
+        # Проверка количества столбцов
         if len(df.get_columns()) != 5:
             logger.error("В передаваемом Excel-файле количество столбцов не соответствует 5")
             raise ValueError ("Количество столбцов не соответствует нужному!")
-
 
         w_df = df.clone()
 
@@ -74,7 +75,28 @@ class Portfolio(object):
             raise ValueError(f"Столбец {old_columns[4]} должен быть представлен числовыми значениеми")
 
 
-        print(w_df)
+        # Возможные значения для столбца 'Operation'
+        available_operations = ['buy', 'sell', 'купить', 'продать', 'купила',
+                                'продала', 'шорт', 'лонг', 'short', 'long',
+                                'купил', 'продал']
+
+        # Проверка, что в стоблце 'Operation' нет неопознанных значений
+        invalid_rows = w_df.filter(
+            ~pl.col('Operation')
+            .str.strip_chars() # удаляет пробелы справа и слева
+            .str.to_lowercase() # приводит к нижнему регистру
+            .is_in(available_operations)
+        )
+
+        # Если существуют строки с неопознанными операциями, то показываем в каких строках ошибки и
+        # возвращаем None
+        if not invalid_rows.is_empty():
+            logger.warning("Найдены строки с неопозанными значениями в столбце 'Operation'")
+            print(f"Найдены строки с неопозанными значениями в столбце '{old_columns[2]}'")
+            print(invalid_rows)
+            return None
+
+        return w_df
 
 
 
