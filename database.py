@@ -1,6 +1,6 @@
 import sqlite3
 import logging
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 import polars as pl
 
 # Настройка логирования
@@ -277,6 +277,73 @@ class DatabaseManager(object):
             logger.error(f"Ошибка при добавлении DataFrame в таблицу '{table_name}': {e}")
             return False
 
+    def read_table_to_dataframe(self,
+                                table_name: str = None,
+                                sql_query: str = None,
+                                columns: List[str] = None,
+                                where_conditions: Dict[str, Any] = None,
+                                limit: int = None) -> pl.DataFrame:
+        """
+        Выгружает данные из SQL таблицы в DataFrame Polars
+
+        Args:
+            table_name (str, optional): Название таблицы для выгрузки
+            sql_query (str, optional): Произвольный SQL запрос для выполнения
+            columns (List[str], optional): Список столбцов для выбора (если None - все столбцы)
+            where_conditions (Dict[str, Any], optional): Условия WHERE в виде {столбец: значение}
+            limit (int, optional): Ограничение количества строк
+
+        Returns:
+            pl.DataFrame: DataFrame с данными из базы данных
+
+        Raises:
+            ValueError: Если не указан table_name или sql_query
+        """
+
+        if table_name is None and sql_query is None:
+            raise ValueError("Необходимо указать либо table_name, либо sql_query")
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # Формируем SQL запрос
+                if sql_query:
+                    # Используем пользовательский запрос
+                    final_sql = sql_query
+                    params = ()
+                else:
+                    # Строим запрос на основе параметров
+                    if columns:
+                        columns_str = ", ".join(columns)
+                    else:
+                        columns_str = "*"
+
+                    final_sql = f"SELECT {columns_str} FROM {table_name}"
+                    params = ()
+
+                    # Добавляем условия WHERE
+                    if where_conditions:
+                        where_clauses = []
+                        where_values = []
+                        for col, value in where_conditions.items():
+                            where_clauses.append(f"{col} = ?")
+                            where_values.append(value)
+
+                        final_sql += " WHERE " + " AND ".join(where_clauses)
+                        params = tuple(where_values)
+
+                    # Добавляем LIMIT
+                    if limit:
+                        final_sql += f" LIMIT {limit}"
+
+                # Выполняем запрос и загружаем в DataFrame
+                df = pl.read_database(final_sql, conn)
+
+                logger.info(f"Успешно загружено {len(df)} строк в DataFrame")
+                return df
+
+        except Exception as e:
+            logger.error(f"Ошибка при выгрузке данных в DataFrame: {e}")
+            return pl.DataFrame()
 
 if __name__ == '__main__':
     test = DatabaseManager()
@@ -286,7 +353,10 @@ if __name__ == '__main__':
     #                   primary_key='id',
     #                   )
     # test.drop_table(table_name='test_table')
-    data = {"col1": [0, 2], "col2": [3, 7]}
-    df2 = pl.DataFrame(data, schema={"col1": pl.Float32, "col2": pl.Int64})
-    test.add_dataframe_to_table(df=df2, table_name='test')
+    # data = {"col1": [0, 2], "col2": [3, 7]}
+    # df2 = pl.DataFrame(data, schema={"col1": pl.Float32, "col2": pl.Int64})
+    # test.add_dataframe_to_table(df=df2, table_name='test')
+
+    # выгрузка из sql
+    print(test.read_table_to_dataframe(table_name='operations_history'))
 
