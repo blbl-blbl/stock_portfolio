@@ -22,11 +22,9 @@ class Portfolio(object):
 
         except Exception as e:
             logger.error(f"Файл не пути {path} не найден")
-            print(e)
-            return None
+            raise e
 
-    @staticmethod
-    def excel_check(df: pl.DataFrame):
+    def excel_check(self, df: pl.DataFrame):
         """
         Проверка файла Excel на соответствие нужной структуре
         Нужная структура:
@@ -97,6 +95,37 @@ class Portfolio(object):
             return None
 
         return w_df
+
+    def operations_history_to_sql(self, operation : str, path: str = None, data : pl.DataFrame = None):
+        """
+        Запись данных из DataFrame в SQL
+
+        :param data: DataFrame Polars для добавления / замены в SQL
+        :param operation: Тип действия
+            - 'append' : добавить к тому что существует, если не существует, будет создано
+            - 'replace' : заменить существующую таблицу на новые данные
+        :param path: Путь до Excel файла
+            - None : добавление данных не из Excel
+            - Not None : добавлениие данных из Excel (нужен путь до файла)
+        :return:
+        """
+
+        if path is not None:
+            df = self.excel_to_df(path=path)
+        else:
+            # Логика обработки когда в историю добавляется не excel
+            pass
+
+        # Проверка файла на соответствие нужной структуре
+        df = self.excel_check(df=df)
+
+
+        if operation == 'replace':
+            # Логика обработки при замене существующей таблицы
+            pass
+        elif operation == 'append':
+            # Логика обработки при добавлении в таблицу
+            pass
 
 
 
