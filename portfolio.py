@@ -1,5 +1,6 @@
 import polars as pl
 import logging
+from database import DatabaseManager
 
 
 # Настройка логирования
@@ -8,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class Portfolio(object):
     def __init__(self):
-        pass
+        self.DatabaseManager = DatabaseManager()
 
     def excel_to_df(self, path: str):
         """ Чтение файла из Excel """
@@ -96,11 +97,11 @@ class Portfolio(object):
 
         return w_df
 
-    def operations_history_to_sql(self, operation : str, path: str = None, data : pl.DataFrame = None):
+    def operations_history_to_sql(self, operation : str, path: str = None, df : pl.DataFrame = None):
         """
         Запись данных из DataFrame в SQL
 
-        :param data: DataFrame Polars для добавления / замены в SQL
+        :param df: DataFrame Polars для добавления / замены в SQL
         :param operation: Тип действия
             - 'append' : добавить к тому что существует, если не существует, будет создано
             - 'replace' : заменить существующую таблицу на новые данные
@@ -112,9 +113,7 @@ class Portfolio(object):
 
         if path is not None:
             df = self.excel_to_df(path=path)
-        else:
-            # Логика обработки когда в историю добавляется не excel
-            pass
+
 
         # Проверка файла на соответствие нужной структуре
         df = self.excel_check(df=df)
@@ -122,10 +121,14 @@ class Portfolio(object):
 
         if operation == 'replace':
             # Логика обработки при замене существующей таблицы
-            pass
+            self.DatabaseManager.add_dataframe_to_table(df=df,
+                                                        table_name='operations_history',
+                                                        if_exists='replace')
         elif operation == 'append':
             # Логика обработки при добавлении в таблицу
-            pass
+            self.DatabaseManager.add_dataframe_to_table(df=df,
+                                                        table_name='operations_history',
+                                                        if_exists='append')
 
 
 
@@ -133,5 +136,6 @@ class Portfolio(object):
 
 if __name__ == "__main__":
     port = Portfolio()
-    df = port.excel_to_df(path='port.xlsx')
-    port.excel_check(df=df)
+    # df = port.excel_to_df(path='port.xlsx')
+    # port.excel_check(df=df)
+    port.operations_history_to_sql(operation='replace', path='port.xlsx')
