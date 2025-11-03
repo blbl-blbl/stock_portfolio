@@ -72,21 +72,10 @@ class Portfolio(object):
         w_df = self.typization(df = w_df, types=['Date', 'String', 'String', 'Int64', 'Float64'])
 
 
-        # Проверка, что в стоблце 'Operation' нет неопознанных значений
-        invalid_rows = w_df.filter(
-            ~pl.col('Operation')
-            .str.strip_chars() # удаляет пробелы справа и слева
-            .str.to_lowercase() # приводит к нижнему регистру
-            .is_in(self.available_sell_operations + self.available_buy_operations)
-        )
 
-        # Если существуют строки с неопознанными операциями, то показываем в каких строках ошибки и
-        # возвращаем None
-        if not invalid_rows.is_empty():
-            logger.warning("Найдены строки с неопозанными значениями в столбце 'Operation'")
-            print(f"Найдены строки с неопозанными значениями в столбце '{old_columns[2]}'")
-            print(invalid_rows)
-            return None
+        # Проверка, что в стоблце 'Operation' нет неопознанных значений
+        self.operation_check(w_df)
+
 
         # Изменение значений количества на отрицательные где есть sell
         # Если sell, то в Quantity ставится минус, если buy, то плюс
@@ -98,6 +87,28 @@ class Portfolio(object):
         )
 
         return w_df
+
+    def operation_check(self, df : pl.DataFrame):
+        """
+
+        :param df:
+        :return:
+        """
+        invalid_rows = df.filter(
+            ~pl.col('Operation')
+            .str.strip_chars() # удаляет пробелы справа и слева
+            .str.to_lowercase() # приводит к нижнему регистру
+            .is_in(self.available_sell_operations + self.available_buy_operations)
+        )
+
+        # Если существуют строки с неопознанными операциями, то показываем в каких строках ошибки и
+        # возвращаем False
+        if not invalid_rows.is_empty():
+            logger.error("Найдены строки с неопозанными значениями в столбце 'Operation'")
+            print(invalid_rows)
+            raise ValueError (f"Найдены строки с неопозанными значениями в столбце 'Operation'")
+
+        return True
 
     @staticmethod
     def typization(df: pl.DataFrame, types: List[str]):
@@ -191,14 +202,28 @@ class Portfolio(object):
 
         return t_data
 
-    def add_new_operation(self, operation_date: date = date.today() ):
-        pass
+    def add_new_operation(self, secid :str,
+                          operation_type : str,
+                          quantity : int,
+                          price : float,
+                          operation_date: date = date.today()):
+        """
+        Добавление единичной операции в историю операций
 
+        :param secid: SECID актива
+        :param operation_type: тип оперции (buy / sell)
+        :param quantity: количество активов
+        :param price: цена единицы актива
+        :param operation_date: дата операции (по умолчанию - сегодня)
+        :return:
+        """
+
+        pass
 
 if __name__ == "__main__":
     port = Portfolio()
-    port.operations_history_to_sql(operation='replace', path='port.xlsx')
-    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    # port.operations_history_to_sql(operation='replace', path='port.xlsx')
+    # data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
     # print(data)
-    port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
-    print(port.quantity_for_active(data=data))
+    # port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
+    # print(port.quantity_for_active(data=data))
