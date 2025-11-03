@@ -238,12 +238,37 @@ class Portfolio(object):
                                                     table_name='operations_history',
                                                     if_exists='append')
 
+    def operations_history_by_period(self, start_date: date, end_date: date = None):
+        """
+        Выгружает историю операций за выбранный период
+        :param start_date: Начальная дата (формат date)
+        :param end_date: Конечная дата (по умолчанию = начальная) (формат date)
+        :return: DataFrame Polars с историей операций
+        """
+
+
+        if end_date is None:
+            end_date = start_date
+        # Проверка на адекватность дат
+        elif  start_date > end_date:
+            logger.error(f"Передана end_date меньше чем start_date: end_date: {end_date} vs start_date {start_date}")
+            raise ValueError (f"Передана end_date меньше чем start_date: end_date: {end_date} vs start_date {start_date}")
+
+        # Выгрузка
+        df = self.DatabaseManager.read_table_to_dataframe(
+            sql_query=f"SELECT * FROM operations_history WHERE Date >= '{start_date}' AND Date <= '{end_date}'"
+        )
+
+        return df
+
+
 
 if __name__ == "__main__":
     port = Portfolio()
     # port.operations_history_to_sql(operation='replace', path='port.xlsx')
-    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
-    print(data)
+    # data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    # print(data)
     # port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
     # print(port.quantity_for_active(data=data))
     # port.add_new_operation(secid='KILL', operation_type='buy', quantity=10, price=100, operation_date=date(year=2025, month=11, day=2)) # Добавлнеие единичной записи
+    print(port.operations_history_by_period(start_date=date(year=2025, month=11, day=2)))
