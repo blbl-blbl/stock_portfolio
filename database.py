@@ -410,12 +410,13 @@ if __name__ == '__main__':
     # df2 = pl.DataFrame(data, schema={"col1": pl.Float32, "col2": pl.Int64})
     # test.add_dataframe_to_table(df=df2, table_name='test')
 
-    from datetime import date
+
 
     # выгрузка из sql
     print(test.read_table_to_dataframe(table_name='operations_history'))
 
     # Удаление по значению строки
+    from datetime import date
     test.delete_row(table_name='operations_history',
                     where_conditions={
                         "Date" : date(year=2025, month=11, day=3),

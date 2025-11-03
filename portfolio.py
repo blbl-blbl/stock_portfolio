@@ -259,6 +259,8 @@ class Portfolio(object):
             sql_query=f"SELECT * FROM operations_history WHERE Date >= '{start_date}' AND Date <= '{end_date}'"
         )
 
+        df = df.with_row_index(name='№', offset=1)
+
         return df
 
 
@@ -271,4 +273,4 @@ if __name__ == "__main__":
     # port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
     # print(port.quantity_for_active(data=data))
     # port.add_new_operation(secid='KILL', operation_type='buy', quantity=10, price=100, operation_date=date(year=2025, month=11, day=2)) # Добавлнеие единичной записи
-    print(port.operations_history_by_period(start_date=date(year=2025, month=11, day=2)))
+    print(port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today()))
