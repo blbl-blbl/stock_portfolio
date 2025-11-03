@@ -90,9 +90,9 @@ class Portfolio(object):
 
     def operation_check(self, df : pl.DataFrame):
         """
-
-        :param df:
-        :return:
+        Проверка доступности типа операции
+        :param df: DataFrame со столбцом 'Operation'
+        :return: True или ValueError
         """
         invalid_rows = df.filter(
             ~pl.col('Operation')
@@ -210,7 +210,7 @@ class Portfolio(object):
         """
         Добавление единичной операции в историю операций
 
-        :param secid: SECID актива
+        :param secid: униальный id актива
         :param operation_type: тип оперции (buy / sell)
         :param quantity: количество активов
         :param price: цена единицы актива
@@ -218,12 +218,32 @@ class Portfolio(object):
         :return:
         """
 
-        pass
+        operation_type = operation_type.lower().strip()
+
+        # Проверка типа операции
+        if operation_type not in (self.available_sell_operations + self.available_buy_operations):
+            logger.error(f"Неопознанный тип операции {operation_type}")
+            raise ValueError (f"Неопознанный тип операции {operation_type}")
+
+        add_row = pl.DataFrame({
+           'Date' : operation_date,
+            'SECID' : secid,
+            'Operation' : operation_type,
+            'Quantity' : quantity,
+            'Price' : price
+        })
+
+        # Добавление в SQL
+        self.DatabaseManager.add_dataframe_to_table(df=add_row,
+                                                    table_name='operations_history',
+                                                    if_exists='append')
+
 
 if __name__ == "__main__":
     port = Portfolio()
     # port.operations_history_to_sql(operation='replace', path='port.xlsx')
-    # data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
-    # print(data)
+    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    print(data)
     # port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
     # print(port.quantity_for_active(data=data))
+    # port.add_new_operation(secid='KILL', operation_type='buy', quantity=10, price=100, operation_date=date(year=2025, month=11, day=2)) # Добавлнеие единичной записи
