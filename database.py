@@ -345,6 +345,59 @@ class DatabaseManager(object):
             logger.error(f"Ошибка при выгрузке данных в DataFrame: {e}")
             return pl.DataFrame()
 
+    def delete_row(self, table_name: str, where_conditions: Dict[str, Any]) -> bool:
+        """
+        Удаляет строки из таблицы по условиям
+
+        Args:
+            table_name (str): Название таблицы
+            where_conditions (Dict[str, Any]): Условия WHERE в виде {столбец: значение}
+
+        Returns:
+            bool: Успешно ли выполнено удаление
+        """
+
+        if not self.table_exists(table_name):
+            logger.error(f"Таблица '{table_name}' не существует!")
+            return False
+
+        if not where_conditions:
+            logger.error("Не указаны условия для удаления!")
+            return False
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+
+                # Формируем условия WHERE
+                where_clauses = []
+                where_values = []
+
+                for col, value in where_conditions.items():
+                    # Поддержка различных операторов сравнения
+                    if isinstance(value, tuple) and len(value) == 2:
+                        operator, actual_value = value
+                        where_clauses.append(f"{col} {operator} ?")
+                        where_values.append(actual_value)
+                    else:
+                        # По умолчанию используем =
+                        where_clauses.append(f"{col} = ?")
+                        where_values.append(value)
+
+                where_sql = " AND ".join(where_clauses)
+                sql = f"DELETE FROM {table_name} WHERE {where_sql}"
+
+                cursor.execute(sql, tuple(where_values))
+                conn.commit()
+
+                rows_affected = cursor.rowcount
+                logger.info(f"Удалено {rows_affected} строк из таблицы '{table_name}'")
+                return True
+
+        except sqlite3.Error as e:
+            logger.error(f"Ошибка удаления строк из таблицы '{table_name}': {e}")
+            return False
+
 if __name__ == '__main__':
     test = DatabaseManager()
     # test.create_table(table_name='tes',
@@ -357,6 +410,19 @@ if __name__ == '__main__':
     # df2 = pl.DataFrame(data, schema={"col1": pl.Float32, "col2": pl.Int64})
     # test.add_dataframe_to_table(df=df2, table_name='test')
 
+    from datetime import date
+
     # выгрузка из sql
+    print(test.read_table_to_dataframe(table_name='operations_history'))
+
+    # Удаление по значению строки
+    test.delete_row(table_name='operations_history',
+                    where_conditions={
+                        "Date" : date(year=2025, month=11, day=3),
+                        "SECID" : 'KILL',
+                        "Operation" : 'buy',
+                        "Quantity" : 10,
+                        "Price" : 100.0
+                    })
     print(test.read_table_to_dataframe(table_name='operations_history'))
 
