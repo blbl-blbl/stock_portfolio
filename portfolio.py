@@ -67,6 +67,7 @@ class Portfolio(object):
         for i in range(len(new_columns)):
             w_df = w_df.rename({old_columns[i] : new_columns[i]})
 
+
         # Проверка файла на соотвествие типам данных
         w_df = self.typization(df = w_df, types=['Date', 'String', 'String', 'Int64', 'Float64'])
 
@@ -123,12 +124,12 @@ class Portfolio(object):
         for t in range(len(types)):
             try:
                 if types[t] == 'Date':
-                    df = df.with_columns(pl.col('Date').str.to_date(format='%Y-%m-%d'))
+                    df = df.with_columns(pl.col('Date').str.to_date(format='%m-%d-%y')) # format='%Y-%m-%d'
                 else:
                     df = df.cast({df_columns[t] : getattr(pl, types[t])})
             except Exception as e:
                 logger.error(f"Ошибка при конвертации столбца {df_columns[t]} в формат {types[t]}")
-                raise ValueError(f"Ошибка при конвертации столбца {df_columns[t]} в формат {types[t]}")
+                raise ValueError(f"Ошибка при конвертации столбца {df_columns[t]} в формат {types[t]} \n {e}")
 
         return df
 
@@ -195,9 +196,8 @@ class Portfolio(object):
 
 if __name__ == "__main__":
     port = Portfolio()
-    # df = port.excel_to_df(path='port.xlsx')
-    # port.excel_check(df=df)
     # port.operations_history_to_sql(operation='replace', path='port.xlsx')
-    dat = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
-    # port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
-    print(port.quantity_for_active(data=dat))
+    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    # print(data)
+    port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
+    print(port.quantity_for_active(data=data))
