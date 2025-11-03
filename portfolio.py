@@ -125,7 +125,7 @@ class Portfolio(object):
         for t in range(len(types)):
             try:
                 if types[t] == 'Date':
-                    df = df.with_columns(pl.col('Date').str.to_date(format='%m-%d-%y'))
+                    df = df.with_columns(pl.col('Date').str.to_date(format='%Y-%m-%d'))
                 else:
                     df = df.cast({df_columns[t] : getattr(pl, types[t])})
             except Exception as e:
@@ -180,9 +180,10 @@ class Portfolio(object):
         :return:
         """
 
+        # Преобразование даты в "понятный" для Polars тип
+        target_date = target_date.strftime('%Y-%m-%d')
 
-        t_data = self.typization(df = data)
-        # t_data = data.group_by("SECID").agg(pl.col('modified_Quantity').sum())
+        t_data = self.typization(df = data, types=['Date', 'String', 'String', 'Int64', 'Float64', 'Int64'])
         t_data = data.filter(pl.col("Date") <= target_date).group_by("SECID").agg(pl.col('modified_Quantity').sum())
         print(t_data)
 
@@ -195,4 +196,4 @@ if __name__ == "__main__":
     # port.excel_check(df=df)
     # port.operations_history_to_sql(operation='replace', path='port.xlsx')
     data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
-    port.quantity_for_active(data=data)
+    port.quantity_for_active(data=data, target_date=date(year=2025, month=3, day=20))
