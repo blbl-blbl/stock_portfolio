@@ -171,7 +171,8 @@ class Portfolio(object):
                                                         table_name='operations_history',
                                                         if_exists='append')
 
-    def quantity_for_active(self, data: pl.DataFrame, target_date: date = date.today()):
+    @staticmethod
+    def quantity_for_active(data: pl.DataFrame, target_date: date = date.today()):
         """
         Определяем количество бумаг в портфеле на текущий момент
 
@@ -186,6 +187,9 @@ class Portfolio(object):
         # Определение количества каждого актива на дату
         t_data = data.filter(pl.col("Date") <= target_date).group_by("SECID").agg(pl.col('modified_Quantity').sum())
 
+        # Удаление активов где modified_Quantity = 0
+        t_data = t_data.filter(pl.col('modified_Quantity') != 0)
+
         return t_data
 
 
@@ -196,5 +200,6 @@ if __name__ == "__main__":
     # df = port.excel_to_df(path='port.xlsx')
     # port.excel_check(df=df)
     # port.operations_history_to_sql(operation='replace', path='port.xlsx')
-    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
-    port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
+    dat = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    # port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
+    print(port.quantity_for_active(data=dat))
