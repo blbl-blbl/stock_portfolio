@@ -1,7 +1,11 @@
 import polars as pl
 import logging
+
+from polars import Int32, Int16, Float64, Float32
+
 from database import DatabaseManager
-from typing import Union
+from datetime import date
+from typing import List
 
 
 # Настройка логирования
@@ -15,7 +19,8 @@ class Portfolio(object):
         self.available_sell_operations = ['sell', 'продать','продала', 'шорт', 'short', 'продал']
         self.available_buy_operations = ['buy', 'купить', 'купила', 'лонг', 'long','купил']
 
-    def excel_to_df(self, path: str):
+    @staticmethod
+    def excel_to_df(path: str):
         """ Чтение файла из Excel """
         try:
             df = pl.read_excel(
@@ -66,25 +71,7 @@ class Portfolio(object):
             w_df = w_df.rename({old_columns[i] : new_columns[i]})
 
         # Проверка файла на соотвествие типам данных
-        try:
-            w_df = w_df.with_columns(
-                pl.col('Date').str.to_date(format='%m-%d-%y')
-            )
-        except Exception as e:
-            logger.error(f"Ошбика при конвертации {new_columns[0]}. \n{e}")
-            raise ValueError (f"Столбец {old_columns[0]} должен быть датой")
-
-        try:
-            w_df.cast({"Quantity" : pl.Int64})
-        except Exception as e:
-            logger.error(f"Ошбика при конвертации {new_columns[3]}. \n{e}")
-            raise ValueError(f"Столбец {old_columns[3]} должен быть целочисленным значением")
-
-        try:
-            w_df.cast({"Price" : pl.Float64})
-        except Exception as e:
-            logger.error(f"Ошбика при конвертации {new_columns[4]}. \n{e}")
-            raise ValueError(f"Столбец {old_columns[4]} должен быть представлен числовыми значениеми")
+        w_df = self.typization(df = w_df, types=['Date', 'String', 'String', 'Int64', 'Float64'])
 
 
         # Проверка, что в стоблце 'Operation' нет неопознанных значений
@@ -112,9 +99,40 @@ class Portfolio(object):
             .alias('modified_Quantity')
         )
 
-        # print(w_df)
-
         return w_df
+
+    def typization(self, df: pl.DataFrame, types: List[str]):
+        """
+        Изменяет типы данных в DataFrame
+        :param df: DateFrame в котром нужно изменить типы
+        :param types: Список типов на которые необходимо изменить
+        :return: DateFrame с измененными типами данных
+        """
+
+        # Возможные типы в Polars
+        valid_types = ["Int64", "Int32", "Float64", "Float32", "String", "Boolean", "Date", "Datetime"]
+
+        # Проверка, что все запрашиваемые типы существуют
+        for i in types:
+            if i not in valid_types:
+                logger.error(f"Попытка преобразованиия неизвестного типа данных {i}")
+                raise ValueError (f"Неизвестный тип данных {i}")
+
+        # Названия столбцов в DateFrame
+        df_columns = df.columns
+
+        # Конвертация типов
+        for t in range(len(types)):
+            try:
+                if types[t] == 'Date':
+                    df = df.with_columns(pl.col('Date').str.to_date(format='%m-%d-%y'))
+                else:
+                    df = df.cast({df_columns[t] : getattr(pl, types[t])})
+            except Exception as e:
+                logger.error(f"Ошибка при конвертации столбца {df_columns[t]} в формат {types[t]}")
+                raise ValueError(f"Ошибка при конвертации столбца {df_columns[t]} в формат {types[t]}")
+
+        return df
 
     def operations_history_to_sql(self, operation : str, path: str = None, df : pl.DataFrame = None):
         """
@@ -153,15 +171,21 @@ class Portfolio(object):
                                                         table_name='operations_history',
                                                         if_exists='append')
 
-
-    def quantity_for_active(self, data = pl.DataFrame):
+    def quantity_for_active(self, data: pl.DataFrame, target_date: date = date.today()):
         """
+        Определяем количество бумаг в портфеле на текущий момент
 
-        :param data:
+        :param target_date: Дата на которую считается количество бумаг
+        :param data: DataFrame с историей операций
         :return:
         """
 
-        pass
+
+        t_data = self.typization(df = data)
+        # t_data = data.group_by("SECID").agg(pl.col('modified_Quantity').sum())
+        t_data = data.filter(pl.col("Date") <= target_date).group_by("SECID").agg(pl.col('modified_Quantity').sum())
+        print(t_data)
+
 
 
 
@@ -169,4 +193,6 @@ if __name__ == "__main__":
     port = Portfolio()
     # df = port.excel_to_df(path='port.xlsx')
     # port.excel_check(df=df)
-    port.operations_history_to_sql(operation='replace', path='port.xlsx')
+    # port.operations_history_to_sql(operation='replace', path='port.xlsx')
+    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    port.quantity_for_active(data=data)
