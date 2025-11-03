@@ -89,12 +89,12 @@ class Portfolio(object):
             return None
 
         # Изменение значений количества на отрицательные где есть sell
-        # Тут создается новый столбец modified_Quantity, возможно имеет смысл заменить Quantity на modified_Quantity
+        # Если sell, то в Quantity ставится минус, если buy, то плюс
         w_df = w_df.with_columns(
             pl.when(pl.col('Operation').is_in(self.available_sell_operations))
             .then(pl.col('Quantity') * -1)  # делаем отрицательным
             .otherwise(pl.col('Quantity'))  # оставляем как есть
-            .alias('modified_Quantity')
+            .alias('Quantity')
         )
 
         return w_df
@@ -177,26 +177,27 @@ class Portfolio(object):
 
         :param target_date: Дата на которую считается количество бумаг
         :param data: DataFrame с историей операций
-        :return:
+        :return: DataFrame с количеством каждого актива на дату
         """
 
         # Преобразование даты в "понятный" для Polars тип
         target_date = target_date.strftime('%Y-%m-%d')
 
         # Определение количества каждого актива на дату
-        t_data = data.filter(pl.col("Date") <= target_date).group_by("SECID").agg(pl.col('modified_Quantity').sum())
+        t_data = data.filter(pl.col("Date") <= target_date).group_by("SECID").agg(pl.col('Quantity').sum())
 
-        # Удаление активов где modified_Quantity = 0
-        t_data = t_data.filter(pl.col('modified_Quantity') != 0)
+        # Удаление активов где Quantity = 0
+        t_data = t_data.filter(pl.col('Quantity') != 0)
 
         return t_data
 
-
+    def add_new_operation(self, operation_date: date = date.today() ):
+        pass
 
 
 if __name__ == "__main__":
     port = Portfolio()
-    # port.operations_history_to_sql(operation='replace', path='port.xlsx')
+    port.operations_history_to_sql(operation='replace', path='port.xlsx')
     data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
     # print(data)
     port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
