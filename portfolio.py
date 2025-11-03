@@ -1,8 +1,5 @@
 import polars as pl
 import logging
-
-from polars import Int32, Int16, Float64, Float32
-
 from database import DatabaseManager
 from datetime import date
 from typing import List
@@ -101,7 +98,8 @@ class Portfolio(object):
 
         return w_df
 
-    def typization(self, df: pl.DataFrame, types: List[str]):
+    @staticmethod
+    def typization(df: pl.DataFrame, types: List[str]):
         """
         Изменяет типы данных в DataFrame
         :param df: DateFrame в котром нужно изменить типы
