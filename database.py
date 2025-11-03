@@ -305,13 +305,10 @@ class DatabaseManager(object):
 
         try:
             with sqlite3.connect(self.db_path) as conn:
-                # Формируем SQL запрос
                 if sql_query:
-                    # Используем пользовательский запрос
                     final_sql = sql_query
                     params = ()
                 else:
-                    # Строим запрос на основе параметров
                     if columns:
                         columns_str = ", ".join(columns)
                     else:
@@ -320,24 +317,27 @@ class DatabaseManager(object):
                     final_sql = f"SELECT {columns_str} FROM {table_name}"
                     params = ()
 
-                    # Добавляем условия WHERE
                     if where_conditions:
                         where_clauses = []
                         where_values = []
                         for col, value in where_conditions.items():
-                            where_clauses.append(f"{col} = ?")
-                            where_values.append(value)
+                            # Если значение - кортеж, то первый элемент оператор, второй - значение
+                            if isinstance(value, tuple) and len(value) == 2:
+                                operator, actual_value = value
+                                where_clauses.append(f"{col} {operator} ?")
+                                where_values.append(actual_value)
+                            else:
+                                # По умолчанию используем =
+                                where_clauses.append(f"{col} = ?")
+                                where_values.append(value)
 
                         final_sql += " WHERE " + " AND ".join(where_clauses)
                         params = tuple(where_values)
 
-                    # Добавляем LIMIT
                     if limit:
                         final_sql += f" LIMIT {limit}"
 
-                # Выполняем запрос и загружаем в DataFrame
-                df = pl.read_database(final_sql, conn)
-
+                df = pl.read_database(final_sql, conn, execute_options={"parameters": params})
                 logger.info(f"Успешно загружено {len(df)} строк в DataFrame")
                 return df
 
