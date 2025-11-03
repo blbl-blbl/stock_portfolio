@@ -49,6 +49,15 @@ class Portfolio(object):
 
         w_df = df.clone()
 
+        # Удаление пустых строк
+        w_df = w_df.drop_nulls()
+
+        if df.height != w_df.height:
+            logger.warning("Были удалены пустые строки")
+        else:
+            logger.info("Пустые строки не обнаружены")
+
+
         # Переименовывание столбцов в нужные
         new_columns = ['Date', 'SECID', 'Operation', 'Quantity', 'Price']
         old_columns = w_df.columns
@@ -103,7 +112,7 @@ class Portfolio(object):
             .alias('modified_Quantity')
         )
 
-        print(w_df)
+        # print(w_df)
 
         return w_df
 
@@ -158,6 +167,6 @@ class Portfolio(object):
 
 if __name__ == "__main__":
     port = Portfolio()
-    df = port.excel_to_df(path='port.xlsx')
-    port.excel_check(df=df)
-    # port.operations_history_to_sql(operation='replace', path='port.xlsx')
+    # df = port.excel_to_df(path='port.xlsx')
+    # port.excel_check(df=df)
+    port.operations_history_to_sql(operation='replace', path='port.xlsx')
