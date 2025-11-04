@@ -266,7 +266,7 @@ class Portfolio(object):
         return df
 
     @staticmethod
-    def get_row_by_index(df: pl.DataFrame, index: int):
+    def get_row_by_index(df: pl.DataFrame, index: int) -> dict:
         """
         Получение строки по индексу, работает в паре с operations_history_by_period
         :param df: DataFrame Polars
@@ -287,6 +287,28 @@ class Portfolio(object):
 
         return row_dict
 
+    def delete_row(self, row: dict):
+        """
+
+        :param row: Строка в формате dict которая будет удалена
+        :return: None
+        """
+
+        try:
+            self.DatabaseManager.delete_row(
+                table_name="operations_history",
+                where_conditions= {
+                    "Date" : row["Date"],
+                    "SECID" : row["SECID"],
+                    "Operation" : row["Operation"],
+                    "Quantity" : row["Quantity"],
+                    "Price" : row["Price"]
+                }
+            )
+        except Exception as e:
+            logger.error(f"Возникла ошибка при удалении строки {row}")
+            raise e
+
 
 
 if __name__ == "__main__":
@@ -299,4 +321,3 @@ if __name__ == "__main__":
     # port.add_new_operation(secid='KILL', operation_type='buy', quantity=10, price=100, operation_date=date(year=2025, month=11, day=2)) # Добавлнеие единичной записи
     t = port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today())
     print(t)
-    print(port.get_row_by_index(df=t, index=16))
