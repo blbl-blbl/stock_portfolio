@@ -238,7 +238,7 @@ class Portfolio(object):
                                                     table_name='operations_history',
                                                     if_exists='append')
 
-    def operations_history_by_period(self, start_date: date, end_date: date = None):
+    def operations_history_by_period(self, start_date: date, end_date: date = None) -> pl.DataFrame:
         """
         Выгружает историю операций за выбранный период
         :param start_date: Начальная дата (формат date)
@@ -261,7 +261,31 @@ class Portfolio(object):
 
         df = df.with_row_index(name='№', offset=1)
 
+        logger.info(f"Получены данные по операциям за период {start_date} - {end_date}")
+
         return df
+
+    @staticmethod
+    def get_row_by_index(df: pl.DataFrame, index: int):
+        """
+        Получение строки по индексу, работает в паре с operations_history_by_period
+        :param df: DataFrame Polars
+        :param index: Номер строки (нумерация с 1)
+        :return: строка в формате dict
+        """
+
+        # Проверка на существование строки
+        if df.height < index or index < 1:
+            logger.error(f"Введен неверный индекс {index}. Строк в DataFrame {df.height}")
+            raise ValueError ("Введен неверный индекс")
+
+        row_dict = df.row(index=index-1, named=True) # нужная строка в формате Dict
+
+        # row_df = pl.DataFrame(row_dict) # нужная строка в формате DataFrame Polars
+
+        logger.info(f"Выведена {index} строка из {df.height}")
+
+        return row_dict
 
 
 
@@ -273,4 +297,6 @@ if __name__ == "__main__":
     # port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
     # print(port.quantity_for_active(data=data))
     # port.add_new_operation(secid='KILL', operation_type='buy', quantity=10, price=100, operation_date=date(year=2025, month=11, day=2)) # Добавлнеие единичной записи
-    print(port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today()))
+    t = port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today())
+    print(t)
+    print(port.get_row_by_index(df=t, index=16))
