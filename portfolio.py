@@ -312,29 +312,39 @@ class Portfolio(object):
 
     def edit_row(self, old_row: dict, new_row: dict):
         """
-
+        Редактирование строки в истории операций
         :param old_row: dict, строка которая будет изменена
         :param new_row: dict, строка на которую будет изменена
-        :return:
+        :return: bool, успешно ли прошло редактирование
         """
 
-        self.DatabaseManager.update_row(
-            table_name="operations_history",
-            update_data={
-                "Date" : new_row["Date"],
-                "SECID" : new_row["SECID"],
-                "Operation" : new_row["Operation"],
-                "Quantity" : new_row["Quantity"],
-                "Price" : new_row["Price"]
-            },
-            where_conditions={
-                "Date": old_row["Date"],
-                "SECID": old_row["SECID"],
-                "Operation": old_row["Operation"],
-                "Quantity": old_row["Quantity"],
-                "Price": old_row["Price"]
-            }
-        )
+        # Нужно добавить проверку вводимых данных в new_row
+
+        try:
+
+            self.DatabaseManager.update_row(
+                table_name="operations_history",
+                update_data={
+                    "Date" : new_row["Date"],
+                    "SECID" : new_row["SECID"],
+                    "Operation" : new_row["Operation"],
+                    "Quantity" : new_row["Quantity"],
+                    "Price" : new_row["Price"]
+                },
+                where_conditions={
+                    "Date": old_row["Date"],
+                    "SECID": old_row["SECID"],
+                    "Operation": old_row["Operation"],
+                    "Quantity": old_row["Quantity"],
+                    "Price": old_row["Price"]
+                }
+            )
+            logger.info(f"Успшено редактирована строка {old_row}")
+            return True
+
+        except Exception:
+            logger.error("Ошибка при редактировании строки")
+            return False
 
 
 
