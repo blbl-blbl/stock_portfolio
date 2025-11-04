@@ -310,6 +310,33 @@ class Portfolio(object):
             logger.error(f"Возникла ошибка при удалении строки {row}")
             raise e
 
+    def edit_row(self, old_row: dict, new_row: dict):
+        """
+
+        :param old_row: dict, строка которая будет изменена
+        :param new_row: dict, строка на которую будет изменена
+        :return:
+        """
+
+        self.DatabaseManager.update_row(
+            table_name="operations_history",
+            update_data={
+                "Date" : new_row["Date"],
+                "SECID" : new_row["SECID"],
+                "Operation" : new_row["Operation"],
+                "Quantity" : new_row["Quantity"],
+                "Price" : new_row["Price"]
+            },
+            where_conditions={
+                "Date": old_row["Date"],
+                "SECID": old_row["SECID"],
+                "Operation": old_row["Operation"],
+                "Quantity": old_row["Quantity"],
+                "Price": old_row["Price"]
+            }
+        )
+
+
 
 
 if __name__ == "__main__":
@@ -322,3 +349,14 @@ if __name__ == "__main__":
     # port.add_new_operation(secid='KILL', operation_type='buy', quantity=10, price=100, operation_date=date(year=2025, month=11, day=2)) # Добавлнеие единичной записи
     t = port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today())
     print(t)
+    row = port.get_row_by_index(df=t, index=15)
+    print(row)
+    port.edit_row(old_row=row,
+                  new_row={
+                      "Date": "2025-08-20",
+                      "SECID": "KILL",
+                      "Operation": "sell",
+                      "Quantity": 1,
+                      "Price": 50
+                  })
+    print(port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today()))

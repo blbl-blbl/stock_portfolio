@@ -398,6 +398,80 @@ class DatabaseManager(object):
             logger.error(f"Ошибка удаления строк из таблицы '{table_name}': {e}")
             return False
 
+    def update_row(self, table_name: str, update_data: Dict[str, Any],
+                   where_conditions: Dict[str, Any]) -> bool:
+        """
+        Обновляет строки в таблице по условиям
+
+        Args:
+            table_name (str): Название таблицы
+            update_data (Dict[str, Any]): Данные для обновления в виде {столбец: новое_значение}
+            where_conditions (Dict[str, Any]): Условия WHERE в виде {столбец: значение}
+
+        Returns:
+            bool: Успешно ли выполнено обновление
+        """
+
+        if not self.table_exists(table_name):
+            logger.error(f"Таблица '{table_name}' не существует!")
+            return False
+
+        if not update_data:
+            logger.error("Не указаны данные для обновления!")
+            return False
+
+        if not where_conditions:
+            logger.error("Не указаны условия для обновления!")
+            return False
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+
+                # Формируем часть SET для обновления
+                set_clauses = []
+                set_values = []
+
+                for col, value in update_data.items():
+                    set_clauses.append(f"{col} = ?")
+                    set_values.append(value)
+
+                set_sql = ", ".join(set_clauses)
+
+                # Формируем условия WHERE
+                where_clauses = []
+                where_values = []
+
+                for col, value in where_conditions.items():
+                    # Поддержка различных операторов сравнения
+                    if isinstance(value, tuple) and len(value) == 2:
+                        operator, actual_value = value
+                        where_clauses.append(f"{col} {operator} ?")
+                        where_values.append(actual_value)
+                    else:
+                        # По умолчанию используем =
+                        where_clauses.append(f"{col} = ?")
+                        where_values.append(value)
+
+                where_sql = " AND ".join(where_clauses)
+
+                # Объединяем все значения для параметризованного запроса
+                all_values = set_values + where_values
+
+                sql = f"UPDATE {table_name} SET {set_sql} WHERE {where_sql}"
+
+                cursor.execute(sql, tuple(all_values))
+                conn.commit()
+
+                rows_affected = cursor.rowcount
+                logger.info(f"Обновлено {rows_affected} строк в таблице '{table_name}'")
+                return True
+
+        except sqlite3.Error as e:
+            logger.error(f"Ошибка обновления строк в таблице '{table_name}': {e}")
+            return False
+
+
 if __name__ == '__main__':
     test = DatabaseManager()
     # test.create_table(table_name='tes',
