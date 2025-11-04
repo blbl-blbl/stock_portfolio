@@ -289,7 +289,7 @@ class Portfolio(object):
 
     def delete_row(self, row: dict):
         """
-
+        Удаление строки из истории операций
         :param row: Строка в формате dict которая будет удалена
         :return: None
         """
@@ -305,6 +305,7 @@ class Portfolio(object):
                     "Price" : row["Price"]
                 }
             )
+            logger.info(f"Из базы данных удалена операция: {row}")
         except Exception as e:
             logger.error(f"Возникла ошибка при удалении строки {row}")
             raise e
