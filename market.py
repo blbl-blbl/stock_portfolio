@@ -3,6 +3,9 @@ import polars as pl
 from datetime import date
 from database import DatabaseManager
 import logging
+from typing import List
+import json
+
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -13,5 +16,50 @@ class Marketdata(object):
         # Пока что сделал все в одной базе данных, потом нужно подумать как лучше
         self.DBS = DatabaseManager(db_path='database.db')
 
+
+    def get_current_info(self) -> bool:
+        """
+        Получение данных по выбранным бумагам
+        :param secid: List[str], SECID бумаг
+        :return: bool: Успешно ли собрана информация
+        """
+
+        # Все торгующиеся акции
+        shares_url = 'https://iss.moex.com/iss/engines/stock/markets/shares/securities.json'
+
+        response = requests.get(url=shares_url)
+        if response.status_code != 200:
+            logger.error("Не удалось подключиться к API для сбора информации по акциям")
+            raise TimeoutError ("Не удалось подключиться к API Мосбиржи (акции)")
+
+        api_data = response.json()
+
+        # shares_data = {api_data["marketdata"]["columns"][0]: api_data["securities"]["data"][0][0]}
+        #
+        # print(len(api_data["securities"]["data"]))
+
+
+
+
+        # Названия всех столбцов
+        columns = [column for column in api_data["marketdata"]["columns"]]
+
+        shares_data = {column : [] for column in columns}
+
+        # print(shares_data)
+
+        for i in range(len(api_data["securities"]["data"])):
+            for j in range(len(api_data["securities"]["data"][i])):
+                # print(api_data["securities"]["data"][i][j])
+                shares_data[columns[j]] = api_data["securities"]["data"][i][j]
+
+            break
+
+        print(shares_data)
+
+
+
+t = Marketdata()
+t.get_current_info()
 
 
