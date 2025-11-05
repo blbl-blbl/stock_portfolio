@@ -46,14 +46,11 @@ class Marketdata(object):
 
         shares_data = {column : [] for column in columns}
 
-        # print(shares_data)
 
+        # Добавление информации по бумагам в словарь shares_data
         for i in range(len(api_data["securities"]["data"])):
             for j in range(len(api_data["securities"]["data"][i])):
-                # print(api_data["securities"]["data"][i][j])
-                shares_data[columns[j]] = api_data["securities"]["data"][i][j]
-
-            break
+                shares_data[columns[j]].append(api_data["securities"]["data"][i][j])
 
         print(shares_data)
 
