@@ -359,14 +359,14 @@ if __name__ == "__main__":
     # port.add_new_operation(secid='KILL', operation_type='buy', quantity=10, price=100, operation_date=date(year=2025, month=11, day=2)) # Добавлнеие единичной записи
     t = port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today())
     print(t)
-    row = port.get_row_by_index(df=t, index=15)
+    row = port.get_row_by_index(df=t, index=16)
     print(row)
     port.edit_row(old_row=row,
                   new_row={
-                      "Date": "2025-08-20",
+                      "Date": "2025-08-22",
                       "SECID": "KILL",
-                      "Operation": "sell",
-                      "Quantity": 1,
-                      "Price": 50
+                      "Operation": "buy",
+                      "Quantity": 10,
+                      "Price": 1
                   })
     print(port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today()))

@@ -456,9 +456,19 @@ class DatabaseManager(object):
                 where_sql = " AND ".join(where_clauses)
 
                 # Объединяем все значения для параметризованного запроса
-                all_values = set_values + where_values
+                find_rowid_sql = f"SELECT rowid FROM {table_name} WHERE {where_sql} LIMIT 1"
+                cursor.execute(find_rowid_sql, tuple(where_values))
+                result = cursor.fetchone()
 
-                sql = f"UPDATE {table_name} SET {set_sql} WHERE {where_sql}"
+                if not result:
+                    logger.warning(f"Не найдено записей для обновления в таблице '{table_name}'")
+                    return False
+
+                rowid = result[0]
+
+                # Обновляем только запись с найденным ROWID
+                sql = f"UPDATE {table_name} SET {set_sql} WHERE rowid = ?"
+                all_values = set_values + [rowid]
 
                 cursor.execute(sql, tuple(all_values))
                 conn.commit()
