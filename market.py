@@ -20,7 +20,6 @@ class Marketdata(object):
     def get_current_info(self) -> bool:
         """
         Получение данных по выбранным бумагам
-        :param secid: List[str], SECID бумаг
         :return: bool: Успешно ли собрана информация
         """
 
@@ -33,26 +32,32 @@ class Marketdata(object):
             raise TimeoutError ("Не удалось подключиться к API Мосбиржи (акции)")
 
         api_data = response.json()
-
-        # shares_data = {api_data["marketdata"]["columns"][0]: api_data["securities"]["data"][0][0]}
-        #
-        # print(len(api_data["securities"]["data"]))
-
-
-
+        logger.info("Установлено подключение к API Мосбиржи для акций")
 
         # Названия всех столбцов
         columns = [column for column in api_data["marketdata"]["columns"]]
 
-        shares_data = {column : [] for column in columns}
+        # Заполняем None все значения создаваемого словаря
+        shares_data = {column : [None for _ in range(len(api_data["marketdata"]["data"]))] for column in columns}
+
 
 
         # Добавление информации по бумагам в словарь shares_data
-        for i in range(len(api_data["securities"]["data"])):
-            for j in range(len(api_data["securities"]["data"][i])):
-                shares_data[columns[j]].append(api_data["securities"]["data"][i][j])
+        for i in range(len(api_data["marketdata"]["data"])):
+            for j in range(len(api_data["marketdata"]["data"][i])):
+                shares_data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
 
-        print(shares_data)
+        # Создание DateFrame Polars
+        df_shares = pl.DataFrame(data=shares_data, nan_to_null=True, strict=False)
+
+        # Удаляем столбцы, где все значения null
+        df_shares = df_shares[[s.name for s in df_shares if not (s.null_count() == df_shares.height)]]
+
+        # Сохранение в SQL
+        self.DBS.add_dataframe_to_table(df=df_shares,
+                                        table_name='current_marketdata_info',
+                                        if_exists='replace')
+
 
 
 
