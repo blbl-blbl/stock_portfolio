@@ -34,29 +34,38 @@ class Marketdata(object):
         api_data = response.json()
         logger.info("Установлено подключение к API Мосбиржи для акций")
 
-        # Названия всех столбцов
-        columns = [column for column in api_data["marketdata"]["columns"]]
+        try:
+            # Названия всех столбцов
+            columns = [column for column in api_data["marketdata"]["columns"]]
 
-        # Заполняем None все значения создаваемого словаря
-        shares_data = {column : [None for _ in range(len(api_data["marketdata"]["data"]))] for column in columns}
+            # Заполняем None все значения создаваемого словаря
+            shares_data = {column : [None for _ in range(len(api_data["marketdata"]["data"]))] for column in columns}
 
+            # Добавление информации по бумагам в словарь shares_data
+            for i in range(len(api_data["marketdata"]["data"])):
+                for j in range(len(api_data["marketdata"]["data"][i])):
+                    shares_data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сборе информации по акциям \n{e}")
+            return False
 
+        try:
+            # Создание DateFrame Polars
+            df_shares = pl.DataFrame(data=shares_data, nan_to_null=True, strict=False)
 
-        # Добавление информации по бумагам в словарь shares_data
-        for i in range(len(api_data["marketdata"]["data"])):
-            for j in range(len(api_data["marketdata"]["data"][i])):
-                shares_data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
+            # Удаляем столбцы, где все значения null
+            df_shares = df_shares[[s.name for s in df_shares if not (s.null_count() == df_shares.height)]]
 
-        # Создание DateFrame Polars
-        df_shares = pl.DataFrame(data=shares_data, nan_to_null=True, strict=False)
+            # Сохранение в SQL
+            self.DBS.add_dataframe_to_table(df=df_shares,
+                                            table_name='current_marketdata_info',
+                                            if_exists='replace')
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сохранении информации по акциям \n{e}")
+            return False
 
-        # Удаляем столбцы, где все значения null
-        df_shares = df_shares[[s.name for s in df_shares if not (s.null_count() == df_shares.height)]]
-
-        # Сохранение в SQL
-        self.DBS.add_dataframe_to_table(df=df_shares,
-                                        table_name='current_marketdata_info',
-                                        if_exists='replace')
+        logger.info("Сбор последней информации по акциям прошел успешно")
+        return True
 
 
 
