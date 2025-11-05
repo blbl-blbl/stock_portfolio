@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseManager(object):
-    def __init__(self, db_path: str = "database.db"):
+    def __init__(self, db_path: str):
         self.db_path = db_path
 
     def create_table(self, table_name: str, columns: Dict[str, str],
@@ -483,7 +483,7 @@ class DatabaseManager(object):
 
 
 if __name__ == '__main__':
-    test = DatabaseManager()
+    test = DatabaseManager(db_path="database.db")
     # test.create_table(table_name='tes',
     #                   columns={'id': 'INTEGER',
     #                            'mimimi': 'TEXT'},

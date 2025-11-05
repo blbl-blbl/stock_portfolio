@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Portfolio(object):
     def __init__(self):
-        self.DatabaseManager = DatabaseManager()
+        self.DatabaseManager = DatabaseManager(db_path="database.db")
         # Возможные значения для столбца 'Operation'
         self.available_sell_operations = ['sell', 'продать','продала', 'шорт', 'short', 'продал']
         self.available_buy_operations = ['buy', 'купить', 'купила', 'лонг', 'long','купил']
@@ -313,8 +313,8 @@ class Portfolio(object):
     def edit_row(self, old_row: dict, new_row: dict):
         """
         Редактирование строки в истории операций
-        :param old_row: dict, строка которая будет изменена
-        :param new_row: dict, строка на которую будет изменена
+        :param old_row: dict, старая строка
+        :param new_row: dict, новая строка
         :return: bool, успешно ли прошло редактирование
         """
 
