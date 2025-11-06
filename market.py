@@ -4,7 +4,6 @@ from datetime import date
 from database import DatabaseManager
 import logging
 from typing import List
-import json
 
 
 # Настройка логирования
@@ -16,7 +15,10 @@ class Marketdata(object):
         # Пока что сделал все в одной базе данных, потом нужно подумать как лучше
         self.DBS = DatabaseManager(db_path='database.db')
 
-
+    # Нужно добавить сбор инфы по облигациям
+    # Возможно нужно разделить это на несколько функций
+    # Типо 1 функция для сбора данных по акциям, 2 функция для сбора по облигациям
+    # Непонятно нужно ли все хранить вместе или по отедльности
     def get_current_info(self) -> bool:
         """
         Получение данных по выбранным бумагам
@@ -55,6 +57,9 @@ class Marketdata(object):
 
             # Удаляем столбцы, где все значения null
             df_shares = df_shares[[s.name for s in df_shares if not (s.null_count() == df_shares.height)]]
+
+            # Добавляем столбец с типом бумаг
+            df_shares = df_shares.with_columns(pl.lit('Акция').alias('securities_type'))
 
             # Сохранение в SQL
             self.DBS.add_dataframe_to_table(df=df_shares,
