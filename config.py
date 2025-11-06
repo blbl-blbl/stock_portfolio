@@ -8,6 +8,8 @@ shares_url = 'https://iss.moex.com/iss/engines/stock/markets/shares/securities.j
 
 # Нужные режими торгов для акций
 BOARDID_SHARES = ['TQBR']
+# Нужные режимы торгов для пифов
+BOARDID_ETFS = ['TQTF']
 
 # Ссылка на API Мосбиржи для сбора данных по облигациям
 bonds_url = 'https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json'
