@@ -15,6 +15,7 @@ BOARDID_ETFS = ['TQTF']
 bonds_url = 'https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json'
 
 # Нужные режимы торгов для облигаций
-# Возможно нужно еще расширить
-BOARDID_BONDS = ['TQIR', 'TQOB']
+# Возможно нужно еще расширить (https://iss.moex.com/iss/engines/stock/markets/bonds.xml)
+BOARDID_BONDS = ['TQIR', 'TQOB', 'TQOD', 'TQCB', 'TQOE', 'TQOY', 'TQRD', 'TQUD']
+DEFAULT_BONDS = ['TQRD', 'TQUD']
 
