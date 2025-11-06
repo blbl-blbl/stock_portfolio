@@ -31,7 +31,7 @@ class Marketdata(object):
         response = requests.get(url=shares_url)
         if response.status_code != 200:
             logger.error("Не удалось подключиться к API для сбора информации по акциям")
-            raise TimeoutError ("Не удалось подключиться к API Мосбиржи (акции)")
+            return False
 
         api_data = response.json()
         logger.info("Установлено подключение к API Мосбиржи для акций")
@@ -58,12 +58,15 @@ class Marketdata(object):
             # Удаляем столбцы, где все значения null
             df_shares = df_shares[[s.name for s in df_shares if not (s.null_count() == df_shares.height)]]
 
+            # Оставляем только бумаги у которых Режим торгов TQBR
+            df_shares = df_shares.filter(pl.col("BOARDID")=="TQBR")
+
             # Добавляем столбец с типом бумаг
             df_shares = df_shares.with_columns(pl.lit('Акция').alias('securities_type'))
 
             # Сохранение в SQL
             self.DBS.add_dataframe_to_table(df=df_shares,
-                                            table_name='current_marketdata_info',
+                                            table_name='current_marketdata_shares',
                                             if_exists='replace')
         except Exception as e:
             logger.error(f"Возникла ошибка при сохранении информации по акциям \n{e}")
@@ -72,7 +75,8 @@ class Marketdata(object):
         logger.info("Сбор последней информации по акциям прошел успешно")
         return True
 
-
+def get_current_info_bonds(self) -> bool:
+    pass
 
 
 t = Marketdata()
