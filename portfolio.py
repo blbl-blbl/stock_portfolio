@@ -3,6 +3,7 @@ import logging
 from database import DatabaseManager
 from datetime import date
 from typing import List
+import config
 
 
 # Настройка логирования
@@ -13,8 +14,8 @@ class Portfolio(object):
     def __init__(self):
         self.DatabaseManager = DatabaseManager(db_path="database.db")
         # Возможные значения для столбца 'Operation'
-        self.available_sell_operations = ['sell', 'продать','продала', 'шорт', 'short', 'продал']
-        self.available_buy_operations = ['buy', 'купить', 'купила', 'лонг', 'long','купил']
+        self.available_sell_operations = config.available_sell_operations
+        self.available_buy_operations = config.available_buy_operations
 
     @staticmethod
     def excel_to_df(path: str):
@@ -120,11 +121,11 @@ class Portfolio(object):
         """
 
         # Возможные типы в Polars
-        valid_types = ["Int64", "Int32", "Float64", "Float32", "String", "Boolean", "Date", "Datetime"]
+        VALID_TYPES = ["Int64", "Int32", "Float64", "Float32", "String", "Boolean", "Date", "Datetime"]
 
         # Проверка, что все запрашиваемые типы существуют
         for i in types:
-            if i not in valid_types:
+            if i not in VALID_TYPES:
                 logger.error(f"Попытка преобразованиия неизвестного типа данных {i}")
                 raise ValueError (f"Неизвестный тип данных {i}")
 

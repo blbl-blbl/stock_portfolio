@@ -1,0 +1,14 @@
+
+# Возможные значения для столбца 'Operation' в operation_history
+available_sell_operations = ['sell', 'продать','продала', 'шорт', 'short', 'продал']
+available_buy_operations = ['buy', 'купить', 'купила', 'лонг', 'long','купил']
+
+# Ссылка на API Мосбиржи для сбора данных по акциям
+shares_url = 'https://iss.moex.com/iss/engines/stock/markets/shares/securities.json'
+
+# Нужные режими торгов для акций
+BOARDID_SHARES = ['TQBR']
+
+# Ссылка на API Мосбиржи для сбора данных по облигациям
+bonds_url = 'https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json'
+

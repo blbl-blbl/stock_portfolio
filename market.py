@@ -4,6 +4,7 @@ from datetime import date
 from database import DatabaseManager
 import logging
 from typing import List
+import config
 
 
 # Настройка логирования
@@ -14,6 +15,8 @@ class Marketdata(object):
     def __init__(self):
         # Пока что сделал все в одной базе данных, потом нужно подумать как лучше
         self.DBS = DatabaseManager(db_path='database.db')
+        self.shares_url = config.shares_url
+        self.BOARDID_SHARES = config.BOARDID_SHARES
 
     # Нужно добавить сбор инфы по облигациям
     # Возможно нужно разделить это на несколько функций
@@ -25,10 +28,7 @@ class Marketdata(object):
         :return: bool: Успешно ли собрана информация
         """
 
-        # Все торгующиеся акции
-        shares_url = 'https://iss.moex.com/iss/engines/stock/markets/shares/securities.json'
-
-        response = requests.get(url=shares_url)
+        response = requests.get(url=self.shares_url)
         if response.status_code != 200:
             logger.error("Не удалось подключиться к API для сбора информации по акциям")
             return False
@@ -59,7 +59,7 @@ class Marketdata(object):
             df_shares = df_shares[[s.name for s in df_shares if not (s.null_count() == df_shares.height)]]
 
             # Оставляем только бумаги у которых Режим торгов TQBR
-            df_shares = df_shares.filter(pl.col("BOARDID")=="TQBR")
+            df_shares = df_shares.filter(pl.col("BOARDID").is_in(self.BOARDID_SHARES))
 
             # Добавляем столбец с типом бумаг
             df_shares = df_shares.with_columns(pl.lit('Акция').alias('securities_type'))
