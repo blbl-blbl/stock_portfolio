@@ -14,3 +14,6 @@ BOARDID_ETFS = ['TQTF']
 # Ссылка на API Мосбиржи для сбора данных по облигациям
 bonds_url = 'https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json'
 
+# Нужные режимы торгов для облигаций
+BOARDID_BONDS = []
+

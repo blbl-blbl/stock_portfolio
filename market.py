@@ -16,23 +16,25 @@ class Marketdata(object):
         # Пока что сделал все в одной базе данных, потом нужно подумать как лучше
         self.DBS = DatabaseManager(db_path='database.db')
         self.shares_url = config.shares_url
+        self.bonds_url = config.bonds_url
         self.BOARDID_SHARES = config.BOARDID_SHARES
         self.BOARDID_ETFS = config.BOARDID_ETFS
+        self.BOARDID_BONDS = config.BOARDID_BONDS
 
 
     def get_current_info_shares_and_etfs(self) -> bool:
         """
-        Получение данных по выбранным бумагам
+        Получение данных по акциям и ETF
         :return: bool: Успешно ли собрана информация
         """
 
         response = requests.get(url=self.shares_url)
         if response.status_code != 200:
-            logger.error("Не удалось подключиться к API для сбора информации по акциям")
+            logger.error("Не удалось подключиться к API для сбора информации по акциям и ETF")
             return False
 
         api_data = response.json()
-        logger.info("Установлено подключение к API Мосбиржи для акций")
+        logger.info("Установлено подключение к API Мосбиржи для акций и ETF")
 
         try:
             # Названия всех столбцов
@@ -46,7 +48,7 @@ class Marketdata(object):
                 for j in range(len(api_data["marketdata"]["data"][i])):
                     data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
         except Exception as e:
-            logger.error(f"Возникла ошибка при сборе информации по акциям \n{e}")
+            logger.error(f"Возникла ошибка при сборе информации по акциям и ETF \n{e}")
             return False
 
         try:
@@ -96,9 +98,60 @@ class Marketdata(object):
         logger.info("Сбор последней информации по ETF прошел успешно")
         return True
 
-def get_current_info_bonds(self) -> bool:
-    pass
+    def get_current_info_bonds(self) -> bool:
+        """
+        Получение данных по облигациям
+        :param self:
+        :return:
+        """
 
+        response = requests.get(url=self.bonds_url)
+        if response.status_code != 200:
+            logger.error("Не удалось подключиться к API для сбора информации по облигациям")
+            return False
+
+        api_data = response.json()
+        logger.info("Установлено подключение к API Мосбиржи для облигаций")
+
+        try:
+            # Названия всех столбцов
+            columns = [column for column in api_data["marketdata"]["columns"]]
+
+            # Заполняем None все значения создаваемого словаря
+            data = {column: [None for _ in range(len(api_data["marketdata"]["data"]))] for column in columns}
+
+            # Добавление информации по бумагам в словарь shares_data
+            for i in range(len(api_data["marketdata"]["data"])):
+                for j in range(len(api_data["marketdata"]["data"][i])):
+                    data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сборе информации по акциям \n{e}")
+            return False
+
+        try:
+            # Создание DateFrame Polars
+            df_shares = pl.DataFrame(data=data, nan_to_null=True, strict=False)
+
+            # Удаляем столбцы, где все значения null
+            df_shares = df_shares[[s.name for s in df_shares if not (s.null_count() == df_shares.height)]]
+
+            # Оставляем только бумаги у которых нужный режим торгов
+            df_shares = df_shares.filter(pl.col("BOARDID").is_in(self.BOARDID_BONDS))
+
+            # Добавляем столбец с типом бумаг
+            df_shares = df_shares.with_columns(pl.lit('Акция').alias('securities_type'))
+
+            # Сохранение в SQL
+            self.DBS.add_dataframe_to_table(df=df_shares,
+                                            table_name='current_marketdata_shares',
+                                            if_exists='replace')
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сохранении информации по акциям \n{e}")
+            return False
+
+        logger.info("Сбор последней информации по облигациям прошел успешно")
+
+        return True
 
 t = Marketdata()
 t.get_current_info_shares_and_etfs()
