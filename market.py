@@ -127,74 +127,75 @@ class Marketdata(object):
                 for j in range(len(api_data["securities"]["data"][i])):
                     data[columns[j]][i] = api_data["securities"]["data"][i][j]
         except Exception as e:
-            logger.error(f"Возникла ошибка при сборе информации по облигациям \n{e}")
+            logger.error(f"Возникла ошибка при сборе информации по облигациям (БЛОК securities) \n{e}")
             return False
 
         try:
             # Создание DateFrame Polars
-            df_bonds = pl.DataFrame(data=data, nan_to_null=True, strict=False)
+            df_bonds_s = pl.DataFrame(data=data, nan_to_null=True, strict=False)
 
             # Удаляем столбцы, где все значения null
-            df_bonds = df_bonds[[s.name for s in df_bonds if not (s.null_count() == df_bonds.height)]]
+            df_bonds_s = df_bonds_s[[s.name for s in df_bonds_s if not (s.null_count() == df_bonds_s.height)]]
 
             # Оставляем только бумаги у которых нужный режим торгов
-            df_bonds = df_bonds.filter(pl.col("BOARDID").is_in(self.BOARDID_BONDS))
+            df_bonds_s = df_bonds_s.filter(pl.col("BOARDID").is_in(self.BOARDID_BONDS))
 
             # Добавляем столбец с типом бумаг
-            df_bonds = df_bonds.with_columns(pl.lit('bond').alias('securities_type'))
+            df_bonds_s = df_bonds_s.with_columns(pl.lit('bond').alias('securities_type'))
 
             # Добавляем столбец-индикатор 'Дефолт'
-            df_bonds = df_bonds.with_columns(
+            df_bonds_s = df_bonds_s.with_columns(
                 pl.when(pl.col("BOARDID").is_in(self.DEFAULT_BONDS))
                 .then(1)
                 .otherwise(0)
                 .alias('is_default')
             )
 
-            # Сохранение в SQL
-            self.DBS.add_dataframe_to_table(df=df_bonds,
-                                            table_name='current_marketdata_bonds',
-                                            if_exists='replace')
         except Exception as e:
-            logger.error(f"Возникла ошибка при сохранении информации по облигациям \n{e}")
+            logger.error(f"Возникла ошибка при сохранении информации по облигациям (БЛОК securities) \n{e}")
             return False
 
 
-        # try:
-        #     # Названия всех столбцов
-        #     columns = [column for column in api_data["marketdata"]["columns"]]
-        #
-        #     # Заполняем None все значения создаваемого словаря
-        #     data = {column: [None for _ in range(len(api_data["marketdata"]["data"]))] for column in columns}
-        #
-        #     # Добавление информации по бумагам в словарь shares_data
-        #     for i in range(len(api_data["marketdata"]["data"])):
-        #         for j in range(len(api_data["marketdata"]["data"][i])):
-        #             data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
-        # except Exception as e:
-        #     logger.error(f"Возникла ошибка при сборе информации по облигациям \n{e}")
-        #     return False
-        #
-        # try:
-        #     # Создание DateFrame Polars
-        #     df_bonds = pl.DataFrame(data=data, nan_to_null=True, strict=False)
-        #
-        #     # Удаляем столбцы, где все значения null
-        #     df_bonds = df_bonds[[s.name for s in df_bonds if not (s.null_count() == df_bonds.height)]]
-        #
-        #     # Оставляем только бумаги у которых нужный режим торгов
-        #     df_bonds = df_bonds.filter(pl.col("BOARDID").is_in(self.BOARDID_BONDS))
-        #
-        #     # Добавляем столбец с типом бумаг
-        #     df_bonds = df_bonds.with_columns(pl.lit('bond').alias('securities_type'))
-        #
-        #     # Сохранение в SQL
-        #     self.DBS.add_dataframe_to_table(df=df_bonds,
-        #                                     table_name='current_marketdata_bonds',
-        #                                     if_exists='replace')
-        # except Exception as e:
-        #     logger.error(f"Возникла ошибка при сохранении информации по облигациям \n{e}")
-        #     return False
+        try:
+            # Названия всех столбцов
+            columns = [column for column in api_data["marketdata"]["columns"]]
+
+            # Заполняем None все значения создаваемого словаря
+            data = {column: [None for _ in range(len(api_data["marketdata"]["data"]))] for column in columns}
+
+            # Добавление информации по бумагам в словарь shares_data
+            for i in range(len(api_data["marketdata"]["data"])):
+                for j in range(len(api_data["marketdata"]["data"][i])):
+                    data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сборе информации по облигациям (БЛОК marketdata) \n{e}")
+            return False
+
+        try:
+            # Создание DateFrame Polars
+            df_bonds_m = pl.DataFrame(data=data, nan_to_null=True, strict=False)
+
+            # Удаляем столбцы, где все значения null
+            df_bonds_m = df_bonds_m[[s.name for s in df_bonds_m if not (s.null_count() == df_bonds_m.height)]]
+
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сохранении информации по облигациям (БЛОК marketdata) \n{e}")
+            return False
+
+        try:
+            full_df = df_bonds_s.join(df_bonds_m, on='SECID', how='inner', suffix='_m')
+        except Exception as e:
+            logger.error(f"Возникла ошибка при объединении датафреймов с информацией по облигациям\n{e}")
+            return False
+
+        try:
+            # Сохранение в SQL
+            self.DBS.add_dataframe_to_table(df=full_df,
+                                            table_name='current_marketdata_bonds',
+                                            if_exists='replace')
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сохранении информации по облигациям в базу данных \n{e}")
+            return False
 
         logger.info("Сбор последней информации по облигациям прошел успешно")
 
