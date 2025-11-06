@@ -19,7 +19,7 @@ class Marketdata(object):
     # Возможно нужно разделить это на несколько функций
     # Типо 1 функция для сбора данных по акциям, 2 функция для сбора по облигациям
     # Непонятно нужно ли все хранить вместе или по отедльности
-    def get_current_info(self) -> bool:
+    def get_current_info_shares(self) -> bool:
         """
         Получение данных по выбранным бумагам
         :return: bool: Успешно ли собрана информация
@@ -76,6 +76,6 @@ class Marketdata(object):
 
 
 t = Marketdata()
-t.get_current_info()
+t.get_current_info_shares()
 
 
