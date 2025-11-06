@@ -17,12 +17,10 @@ class Marketdata(object):
         self.DBS = DatabaseManager(db_path='database.db')
         self.shares_url = config.shares_url
         self.BOARDID_SHARES = config.BOARDID_SHARES
+        self.BOARDID_ETFS = config.BOARDID_ETFS
 
-    # Нужно добавить сбор инфы по облигациям
-    # Возможно нужно разделить это на несколько функций
-    # Типо 1 функция для сбора данных по акциям, 2 функция для сбора по облигациям
-    # Непонятно нужно ли все хранить вместе или по отедльности
-    def get_current_info_shares(self) -> bool:
+
+    def get_current_info_shares_and_etfs(self) -> bool:
         """
         Получение данных по выбранным бумагам
         :return: bool: Успешно ли собрана информация
@@ -41,24 +39,24 @@ class Marketdata(object):
             columns = [column for column in api_data["marketdata"]["columns"]]
 
             # Заполняем None все значения создаваемого словаря
-            shares_data = {column : [None for _ in range(len(api_data["marketdata"]["data"]))] for column in columns}
+            data = {column : [None for _ in range(len(api_data["marketdata"]["data"]))] for column in columns}
 
             # Добавление информации по бумагам в словарь shares_data
             for i in range(len(api_data["marketdata"]["data"])):
                 for j in range(len(api_data["marketdata"]["data"][i])):
-                    shares_data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
+                    data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
         except Exception as e:
             logger.error(f"Возникла ошибка при сборе информации по акциям \n{e}")
             return False
 
         try:
             # Создание DateFrame Polars
-            df_shares = pl.DataFrame(data=shares_data, nan_to_null=True, strict=False)
+            df_shares = pl.DataFrame(data=data, nan_to_null=True, strict=False)
 
             # Удаляем столбцы, где все значения null
             df_shares = df_shares[[s.name for s in df_shares if not (s.null_count() == df_shares.height)]]
 
-            # Оставляем только бумаги у которых Режим торгов TQBR
+            # Оставляем только бумаги у которых нужный режим торгов
             df_shares = df_shares.filter(pl.col("BOARDID").is_in(self.BOARDID_SHARES))
 
             # Добавляем столбец с типом бумаг
@@ -73,6 +71,29 @@ class Marketdata(object):
             return False
 
         logger.info("Сбор последней информации по акциям прошел успешно")
+
+        try:
+            # Создание DateFrame Polars
+            df_etfs = pl.DataFrame(data=data, nan_to_null=True, strict=False)
+
+            # Удаляем столбцы, где все значения null
+            df_etfs = df_etfs[[s.name for s in df_etfs if not (s.null_count() == df_etfs.height)]]
+
+            # Оставляем только бумаги у которых нужный режим торгов
+            df_etfs = df_etfs.filter(pl.col("BOARDID").is_in(self.BOARDID_ETFS))
+
+            # Добавляем столбец с типом бумаг
+            df_etfs = df_etfs.with_columns(pl.lit('ETF').alias('securities_type'))
+
+            # Сохранение в SQL
+            self.DBS.add_dataframe_to_table(df=df_etfs,
+                                            table_name='current_marketdata_etfs',
+                                            if_exists='replace')
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сохранении информации по ETF \n{e}")
+            return False
+
+        logger.info("Сбор последней информации по ETF прошел успешно")
         return True
 
 def get_current_info_bonds(self) -> bool:
@@ -80,6 +101,6 @@ def get_current_info_bonds(self) -> bool:
 
 
 t = Marketdata()
-t.get_current_info_shares()
+t.get_current_info_shares_and_etfs()
 
 
