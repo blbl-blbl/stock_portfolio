@@ -1,9 +1,7 @@
 import requests
 import polars as pl
-from datetime import date
 from database import DatabaseManager
 import logging
-from typing import List
 import config
 
 

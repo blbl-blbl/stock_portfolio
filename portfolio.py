@@ -121,11 +121,11 @@ class Portfolio(object):
         """
 
         # Возможные типы в Polars
-        VALID_TYPES = ["Int64", "Int32", "Float64", "Float32", "String", "Boolean", "Date", "Datetime"]
+        valid_types = ["Int64", "Int32", "Float64", "Float32", "String", "Boolean", "Date", "Datetime"]
 
         # Проверка, что все запрашиваемые типы существуют
         for i in types:
-            if i not in VALID_TYPES:
+            if i not in valid_types:
                 logger.error(f"Попытка преобразованиия неизвестного типа данных {i}")
                 raise ValueError (f"Неизвестный тип данных {i}")
 
@@ -343,8 +343,8 @@ class Portfolio(object):
             logger.info(f"Успшено редактирована строка {old_row}")
             return True
 
-        except Exception:
-            logger.error("Ошибка при редактировании строки")
+        except Exception as e:
+            logger.error(f"Ошибка при редактировании строки {e}")
             return False
 
 
