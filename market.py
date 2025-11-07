@@ -280,6 +280,13 @@ class Marketdata(object):
             logger.error(f"Возникла ошибка при объединении датафреймов с информацией по валюте\n{e}")
             return False
 
+        # В столбце SECID убираются лишние окончания
+        full_df = full_df.with_columns(
+            pl.col("SECID")
+            .str.strip_suffix("FIXME")
+            .str.strip_suffix("FIX")
+        )
+
         try:
             # Сохранение в SQL
             self.DBS.add_dataframe_to_table(df=full_df,
