@@ -283,7 +283,6 @@ class Marketdata(object):
         # В столбце SECID убираются лишние окончания
         full_df = full_df.with_columns(
             pl.col("SECID")
-            .str.strip_suffix("FIXME")
             .str.strip_suffix("FIX")
         )
 
