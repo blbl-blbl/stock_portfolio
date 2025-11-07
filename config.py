@@ -19,3 +19,6 @@ bonds_url = 'https://iss.moex.com/iss/engines/stock/markets/bonds/securities.jso
 BOARDID_BONDS = ['TQIR', 'TQOB', 'TQOD', 'TQCB', 'TQOE', 'TQOY', 'TQRD', 'TQUD']
 DEFAULT_BONDS = ['TQRD', 'TQUD']
 
+# Ссылка на API Мосбиржии для сбора данных по валютам
+currencies_url = 'https://iss.moex.com/iss/engines/currency/markets/index/securities.json'
+

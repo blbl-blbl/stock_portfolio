@@ -19,6 +19,7 @@ class Marketdata(object):
         self.BOARDID_ETFS = config.BOARDID_ETFS
         self.BOARDID_BONDS = config.BOARDID_BONDS
         self.DEFAULT_BONDS = config.DEFAULT_BONDS
+        self.currencies_url = config.currencies_url
 
 
     def get_current_info_shares_and_etfs(self) -> bool:
@@ -199,7 +200,102 @@ class Marketdata(object):
 
         return True
 
+    def get_currencies(self):
+        """
+
+        :return: bool: True если успешно
+        """
+
+        response = requests.get(url=self.currencies_url)
+        if response.status_code != 200:
+            logger.error("Не удалось подключиться к API для сбора информации по валютам")
+            return False
+
+        api_data = response.json()
+        logger.info("Установлено подключение к API Мосбиржи для валют")
+
+        # Сбор данных из блока securities
+        try:
+            # Названия всех столбцов
+            columns = [column for column in api_data["securities"]["columns"]]
+
+            # Заполняем None все значения создаваемого словаря
+            data = {column: [None for _ in range(len(api_data["securities"]["data"]))] for column in columns}
+
+            # Добавление информации по бумагам в словарь
+            for i in range(len(api_data["securities"]["data"])):
+                for j in range(len(api_data["securities"]["data"][i])):
+                    data[columns[j]][i] = api_data["securities"]["data"][i][j]
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сборе информации по валютам (блок securities) \n{e}")
+            return False
+
+        try:
+            # Создание DateFrame Polars
+            df_currencies_s = pl.DataFrame(data=data, nan_to_null=True, strict=False)
+
+            # Удаляем столбцы, где все значения null
+            df_currencies_s = df_currencies_s[[s.name for s in df_currencies_s if not (s.null_count() == df_currencies_s.height)]]
+
+            # Добавляем столбец с типом бумаг
+            df_currencies_s = df_currencies_s.with_columns(pl.lit('currency').alias('securities_type'))
+
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сохранении информации в датафрейм по валюте (БЛОК securities) \n{e}")
+            return False
+
+
+        # Сбор данных из блока marketdata
+        try:
+            # Названия всех столбцов
+            columns = [column for column in api_data["marketdata"]["columns"]]
+
+            # Заполняем None все значения создаваемого словаря
+            data = {column: [None for _ in range(len(api_data["marketdata"]["data"]))] for column in columns}
+
+            # Добавление информации по бумагам в словарь
+            for i in range(len(api_data["marketdata"]["data"])):
+                for j in range(len(api_data["marketdata"]["data"][i])):
+                    data[columns[j]][i] = api_data["marketdata"]["data"][i][j]
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сборе информации по валютам (блок marketdata) \n{e}")
+            return False
+
+        try:
+            # Создание DateFrame Polars
+            df_currencies_m = pl.DataFrame(data=data, nan_to_null=True, strict=False)
+
+            # Удаляем столбцы, где все значения null
+            df_currencies_m = df_currencies_m[[s.name for s in df_currencies_m if not (s.null_count() == df_currencies_m.height)]]
+
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сохранении информации в датафрейм по валюте (БЛОК marketdata) \n{e}")
+            return False
+
+
+        # Объединение датафреймов из блоков securities и marketdata
+        try:
+            full_df = df_currencies_s.join(df_currencies_m, on='SECID', how='inner', suffix='_m')
+        except Exception as e:
+            logger.error(f"Возникла ошибка при объединении датафреймов с информацией по валюте\n{e}")
+            return False
+
+        try:
+            # Сохранение в SQL
+            self.DBS.add_dataframe_to_table(df=full_df,
+                                            table_name='current_marketdata_currency',
+                                            if_exists='replace')
+        except Exception as e:
+            logger.error(f"Возникла ошибка при сохранении информации по валюте в базу данных \n{e}")
+            return False
+
+        logger.info("Сбор последней информации по валютам прошел успешно")
+        return True
+
+
+
 t = Marketdata()
-t.get_current_info_shares_and_etfs()
-t.get_current_info_bonds()
+# t.get_current_info_shares_and_etfs()
+# t.get_current_info_bonds()
+t.get_currencies()
 
