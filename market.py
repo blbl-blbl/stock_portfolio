@@ -3,6 +3,7 @@ import polars as pl
 from database import DatabaseManager
 import logging
 import config
+from typing import List, Any
 
 
 # Настройка логирования
@@ -20,6 +21,7 @@ class Marketdata(object):
         self.BOARDID_BONDS = config.BOARDID_BONDS
         self.DEFAULT_BONDS = config.DEFAULT_BONDS
         self.currencies_url = config.currencies_url
+        self.target_currencies = config.target_currencies
 
 
     def get_current_info_shares_and_etfs(self) -> bool:
@@ -200,7 +202,7 @@ class Marketdata(object):
 
         return True
 
-    def get_currencies(self):
+    def get_currencies(self) -> bool:
         """
         Сбор данных о валютах
         :return: bool: True если успешно
@@ -298,6 +300,14 @@ class Marketdata(object):
         logger.info("Сбор последней информации по валютам прошел успешно")
         return True
 
+    def translate_to_curr(self, data: pl.DataFrame):
+        """
+
+        :param data:
+        :return:
+        """
+
+        pass
 
 
 t = Marketdata()
