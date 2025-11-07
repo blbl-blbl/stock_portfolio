@@ -287,6 +287,18 @@ class Marketdata(object):
             .str.strip_suffix("FIX")
         )
 
+        # Добавление строки с рублем
+        new_row = pl.DataFrame({
+            col: [None] for col in full_df.columns
+        }).with_columns(
+            pl.lit("SUR").alias("SECID"),
+            pl.lit("currency").alias("securities_type"),
+            pl.lit("Рубль").alias("NAME"),
+            pl.lit(1.0).alias("LASTVALUE")  # Используем число вместо строки
+        )
+
+        full_df = full_df.vstack(new_row)
+
         try:
             # Сохранение в SQL
             self.DBS.add_dataframe_to_table(df=full_df,
