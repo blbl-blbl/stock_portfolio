@@ -347,6 +347,7 @@ class Portfolio(object):
             logger.error(f"Ошибка при редактировании строки {e}")
             return False
 
+    # НУЖНО ДОДЕЛАТЬ!!!
     def portfolio_value(self, df: pl.DataFrame, target_date: date = date.today()):
         """
         Получение стоимости портфеля
@@ -356,7 +357,7 @@ class Portfolio(object):
         :return:
         """
 
-        df_portfolio = df.clone()
+        temp_df = df.clone()
 
         # Данные по акциям
         df_shares = self.DatabaseManager.read_table_to_dataframe(
@@ -370,7 +371,7 @@ class Portfolio(object):
             'securities_type': 'securities_type_SHARES'
         })
 
-        df_portfolio = df_portfolio.join(
+        temp_df = temp_df.join(
             other=df_shares,
             on='SECID',
             how='left'
@@ -388,13 +389,13 @@ class Portfolio(object):
             'securities_type': 'securities_type_ETF'
         })
 
-        df_portfolio = df_portfolio.join(
+        temp_df = temp_df.join(
             other=df_etf,
             on='SECID',
             how='left'
         )
 
-        df_portfolio = df_portfolio.with_columns([
+        temp_df = temp_df.with_columns([
             pl.coalesce(['MARKETPRICE_SHARES', 'MARKETPRICE_ETF']).alias('MARKETPRICE'),
             pl.coalesce(['securities_type_SHARES', 'securities_type_ETF']).alias('SECURITY_TYPE')
         ])
@@ -411,21 +412,21 @@ class Portfolio(object):
             'securities_type': 'securities_type_BONDS'
         })
 
-        df_portfolio = df_portfolio.join(
+        temp_df = temp_df.join(
             other=df_bonds,
             on='SECID',
             how='left'
         )
 
-        df_portfolio = df_portfolio.with_columns([
+        temp_df = temp_df.with_columns([
             pl.coalesce(['MARKETPRICE', 'MARKETPRICE_BONDS']).alias('MARKETPRICE'),
             pl.coalesce(['SECURITY_TYPE', 'securities_type_BONDS']).alias('SECURITY_TYPE')
         ])
 
+        df_portfolio = temp_df[['SECID', 'Quantity', 'MARKETPRICE', 'SECURITY_TYPE']]
+
+
         print(df_portfolio.head(12))
-
-
-
 
 
 
