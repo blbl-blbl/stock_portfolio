@@ -17,7 +17,7 @@ class Portfolio(object):
         self.available_sell_operations = config.available_sell_operations
         self.available_buy_operations = config.available_buy_operations
         # Валюты для представления
-        self.target_currencies = config.target_currencies
+        # self.target_currencies = config.target_currencies
 
     @staticmethod
     def excel_to_df(path: str):
@@ -430,11 +430,10 @@ class Portfolio(object):
 
         print(df_portfolio.head(12))
 
-
-    def translate_to_rub(self, data: pl.DataFrame):
+    # FIXME: Перенсти в market.py + ошибка при выгрузке в датафрейм (нужно привести к нужным типам данных)
+    def translate_to_rub(self):
         """
         Перевод валютных активов в рубли (работает только для облигаций)
-        :param data:
         :return:
         """
 
@@ -443,17 +442,28 @@ class Portfolio(object):
             columns=['SECID', 'LASTVALUE']
         )
 
-        data.join(other=currency_df,
-                  on='FACEUNIT',
-                  how='left')
+        bonds_df = self.DatabaseManager.read_table_to_dataframe(
+            table_name='current_marketdata_bonds'
+        )
 
+        print(bonds_df)
+
+
+        # merged = bonds_df.join(
+        #     other=currency_df,
+        #     left_on='FACEUNIT',
+        #     right_on='SECID',
+        #     how='left'
+        # )
+        #
+        # print(merged)
 
 
 if __name__ == "__main__":
     port = Portfolio()
-    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
-    quantity = port.quantity_for_active(data=data)
+    # data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    # quantity = port.quantity_for_active(data=data)
     # print(quantity)
-    print(port.portfolio_value(df=quantity))
-
+    # print(port.portfolio_value(df=quantity))
+    port.translate_to_rub()
 
