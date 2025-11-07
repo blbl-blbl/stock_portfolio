@@ -202,7 +202,7 @@ class Marketdata(object):
 
     def get_currencies(self):
         """
-
+        Сбор данных о валютах
         :return: bool: True если успешно
         """
 
