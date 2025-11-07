@@ -347,7 +347,7 @@ class Portfolio(object):
             logger.error(f"Ошибка при редактировании строки {e}")
             return False
 
-    # НУЖНО ДОДЕЛАТЬ!!!
+    # FIXME: Метод не доделан
     def portfolio_value(self, df: pl.DataFrame, target_date: date = date.today()):
         """
         Получение стоимости портфеля
