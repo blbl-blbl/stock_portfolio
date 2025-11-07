@@ -200,6 +200,6 @@ class Marketdata(object):
         return True
 
 t = Marketdata()
-# t.get_current_info_shares_and_etfs()
+t.get_current_info_shares_and_etfs()
 t.get_current_info_bonds()
 

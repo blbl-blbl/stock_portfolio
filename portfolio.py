@@ -347,27 +347,40 @@ class Portfolio(object):
             logger.error(f"Ошибка при редактировании строки {e}")
             return False
 
+    def portfolio_value(self, df: pl.DataFrame, target_date: date = date.today()):
+        """
+        Получение стоимости портфеля
+
+        :param df: Polars DataFrame: SECID и количество на дату
+        :param target_date: date: целевая дата стоимости портфеля
+        :return:
+        """
+
+        # Данные по акциям
+        df_shares = self.DatabaseManager.read_table_to_dataframe(
+            table_name='current_marketdata_shares'
+        )
+
+        df_portfolio = df.clone()
+
+        df_portfolio = df_portfolio.join(
+            other=df_shares,
+            on='SECID',
+            how='left',
+        )
+
+        print(df_portfolio)
+
+
+
 
 
 
 if __name__ == "__main__":
     port = Portfolio()
-    # port.operations_history_to_sql(operation='replace', path='port.xlsx')
-    # data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
-    # print(data)
-    # port.quantity_for_active(data=data, target_date=date(year=2025, month=8, day=21))
-    # print(port.quantity_for_active(data=data))
-    # port.add_new_operation(secid='KILL', operation_type='buy', quantity=10, price=100, operation_date=date(year=2025, month=11, day=2)) # Добавлнеие единичной записи
-    t = port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today())
-    print(t)
-    row = port.get_row_by_index(df=t, index=16)
-    print(row)
-    port.edit_row(old_row=row,
-                  new_row={
-                      "Date": "2025-08-22",
-                      "SECID": "KILL",
-                      "Operation": "buy",
-                      "Quantity": 10,
-                      "Price": 1
-                  })
-    print(port.operations_history_by_period(start_date=date(year=2025, month=8, day=2), end_date=date.today()))
+    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    quantity = port.quantity_for_active(data=data)
+    # print(quantity)
+    print(port.portfolio_value(df=quantity))
+
+
