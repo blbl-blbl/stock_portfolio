@@ -16,6 +16,8 @@ class Portfolio(object):
         # Возможные значения для столбца 'Operation'
         self.available_sell_operations = config.available_sell_operations
         self.available_buy_operations = config.available_buy_operations
+        # Валюты для представления
+        self.target_currencies = config.target_currencies
 
     @staticmethod
     def excel_to_df(path: str):
@@ -427,6 +429,23 @@ class Portfolio(object):
 
 
         print(df_portfolio.head(12))
+
+
+    def translate_to_rub(self, data: pl.DataFrame):
+        """
+        Перевод валютных активов в рубли (работает только для облигаций)
+        :param data:
+        :return:
+        """
+
+        currency_df = self.DatabaseManager.read_table_to_dataframe(
+            table_name='current_marketdata_currency',
+            columns=['SECID', 'LASTVALUE']
+        )
+
+        data.join(other=currency_df,
+                  on='FACEUNIT',
+                  how='left')
 
 
 
