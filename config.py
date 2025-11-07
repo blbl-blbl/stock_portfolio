@@ -23,4 +23,4 @@ DEFAULT_BONDS = ['TQRD', 'TQUD']
 currencies_url = 'https://iss.moex.com/iss/engines/currency/markets/index/securities.json'
 
 # Валюты для представления
-target_currencies = ['USD', 'EUR', 'CNY']
+# target_currencies = ['USD', 'EUR', 'CNY']
