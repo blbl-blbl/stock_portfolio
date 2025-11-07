@@ -356,20 +356,73 @@ class Portfolio(object):
         :return:
         """
 
+        df_portfolio = df.clone()
+
         # Данные по акциям
         df_shares = self.DatabaseManager.read_table_to_dataframe(
-            table_name='current_marketdata_shares'
+            table_name='current_marketdata_shares',
+            columns=['SECID', 'MARKETPRICE', 'securities_type']
         )
 
-        df_portfolio = df.clone()
+        # Переименовываем столбцы
+        df_shares = df_shares.rename({
+            'MARKETPRICE': 'MARKETPRICE_SHARES',
+            'securities_type': 'securities_type_SHARES'
+        })
 
         df_portfolio = df_portfolio.join(
             other=df_shares,
             on='SECID',
-            how='left',
+            how='left'
         )
 
-        print(df_portfolio)
+        # Данные по ETF
+        df_etf = self.DatabaseManager.read_table_to_dataframe(
+            table_name='current_marketdata_etfs',
+            columns=['SECID', 'MARKETPRICE', 'securities_type']
+        )
+
+        # Переименовываем столбцы
+        df_etf = df_etf.rename({
+            'MARKETPRICE': 'MARKETPRICE_ETF',
+            'securities_type': 'securities_type_ETF'
+        })
+
+        df_portfolio = df_portfolio.join(
+            other=df_etf,
+            on='SECID',
+            how='left'
+        )
+
+        df_portfolio = df_portfolio.with_columns([
+            pl.coalesce(['MARKETPRICE_SHARES', 'MARKETPRICE_ETF']).alias('MARKETPRICE'),
+            pl.coalesce(['securities_type_SHARES', 'securities_type_ETF']).alias('SECURITY_TYPE')
+        ])
+
+        # Данные по облигациям
+        df_bonds = self.DatabaseManager.read_table_to_dataframe(
+            table_name='current_marketdata_bonds',
+            columns=['SECID', 'MARKETPRICE', 'securities_type']
+        )
+
+        # Переименовываем столбцы
+        df_bonds = df_bonds.rename({
+            'MARKETPRICE': 'MARKETPRICE_BONDS',
+            'securities_type': 'securities_type_BONDS'
+        })
+
+        df_portfolio = df_portfolio.join(
+            other=df_bonds,
+            on='SECID',
+            how='left'
+        )
+
+        df_portfolio = df_portfolio.with_columns([
+            pl.coalesce(['MARKETPRICE', 'MARKETPRICE_BONDS']).alias('MARKETPRICE'),
+            pl.coalesce(['SECURITY_TYPE', 'securities_type_BONDS']).alias('SECURITY_TYPE')
+        ])
+
+        print(df_portfolio.head(12))
 
 
 
