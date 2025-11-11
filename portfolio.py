@@ -349,7 +349,7 @@ class Portfolio(object):
             logger.error(f"Ошибка при редактировании строки {e}")
             return False
 
-    # FIXME: Метод не доделан
+    # FIXME: Расчет полной стоимости портфеля + стоимости на дату + сейчас нет обработки фьючерсов
     def portfolio_value(self, df: pl.DataFrame, target_date: date = date.today()):
         """
         Получение стоимости портфеля
@@ -428,13 +428,21 @@ class Portfolio(object):
         df_portfolio = temp_df[['SECID', 'Quantity', 'MARKETPRICE', 'SECURITY_TYPE', 'CURRENCY']]
 
         # Предполагаем, что все бумаги кроме облигаций торгуются только в рублях
-        # Поэтому заполняем все оставщиеся 1
+        # Поэтому заполняем все оставшиеся 1
         df_portfolio= df_portfolio.with_columns(
                       pl.col('CURRENCY').fill_null(1)
         )
 
+        # Расчет стоимости каждой позиции в портфеле
+        try:
+            df_portfolio = df_portfolio.with_columns(
+                (pl.col('Quantity') * pl.col('MARKETPRICE') * pl.col('CURRENCY')).alias('Posittion Value')
+            )
+        except Exception as e:
+            logger.error('Возникла ошибка при расчете стоимости каждой позиции в портеле')
+            raise e
 
-        print(df_portfolio.head(10))
+        print(df_portfolio)
 
 
 if __name__ == "__main__":
