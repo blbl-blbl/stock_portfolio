@@ -405,7 +405,7 @@ class Portfolio(object):
         # Данные по облигациям
         df_bonds = self.DatabaseManager.read_table_to_dataframe(
             table_name='current_marketdata_bonds',
-            columns=['SECID', 'MARKETPRICE', 'securities_type']
+            columns=['SECID', 'MARKETPRICE', 'securities_type', 'CURRENCY']
         )
 
         # Переименовываем столбцы
@@ -425,17 +425,22 @@ class Portfolio(object):
             pl.coalesce(['SECURITY_TYPE', 'securities_type_BONDS']).alias('SECURITY_TYPE')
         ])
 
-        df_portfolio = temp_df[['SECID', 'Quantity', 'MARKETPRICE', 'SECURITY_TYPE']]
+        df_portfolio = temp_df[['SECID', 'Quantity', 'MARKETPRICE', 'SECURITY_TYPE', 'CURRENCY']]
+
+        # Предполагаем, что все бумаги кроме облигаций торгуются только в рублях
+        # Поэтому заполняем все оставщиеся 1
+        df_portfolio= df_portfolio.with_columns(
+                      pl.col('CURRENCY').fill_null(1)
+        )
 
 
-        print(df_portfolio.head(12))
+        print(df_portfolio.head(10))
 
 
 if __name__ == "__main__":
     port = Portfolio()
-    # data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
-    # quantity = port.quantity_for_active(data=data)
+    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    quantity = port.quantity_for_active(data=data)
     # print(quantity)
-    # print(port.portfolio_value(df=quantity))
-    port.translate_to_rub()
+    print(port.portfolio_value(df=quantity))
 
