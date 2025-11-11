@@ -312,6 +312,33 @@ class Marketdata(object):
         return True
 
 
+    def translate_to_rub(self):
+        """
+        Добавление в SQL столбца с валютой для каждой облигации
+        :return:
+        """
+
+        currency_df = self.DBS.read_table_to_dataframe(
+            table_name='current_marketdata_currency',
+            columns=['SECID', 'LASTVALUE']
+        )
+        currency_df = currency_df.rename({'LASTVALUE' : 'CURRENCY'})
+
+
+        bonds_df = self.DBS.read_table_to_dataframe(
+            table_name='current_marketdata_bonds'
+        )
+
+        merged = bonds_df.join(
+            other=currency_df,
+            left_on='FACEUNIT',
+            right_on='SECID',
+            how='left'
+        )
+
+        print(merged)
+
+
 
 t = Marketdata()
 # t.get_current_info_shares_and_etfs()
