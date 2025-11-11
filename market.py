@@ -329,19 +329,27 @@ class Marketdata(object):
             table_name='current_marketdata_bonds'
         )
 
-        merged = bonds_df.join(
-            other=currency_df,
-            left_on='FACEUNIT',
-            right_on='SECID',
-            how='left'
-        )
+        # Соединение
+        try:
+            merged = bonds_df.join(
+                other=currency_df,
+                left_on='FACEUNIT',
+                right_on='SECID',
+                how='left'
+            )
+        except Exception as e:
+            logger.error('Ошибка при добавлении столбца с курсом валют в DataFrame')
+            raise e
 
-        print(merged)
+        self.DBS.add_dataframe_to_table(df=merged,
+                                        table_name='current_marketdata_bonds',
+                                        if_exists='replace')
 
+        logger.info('Курсы валют успешно добавлены в базу данных')
 
 
 t = Marketdata()
 # t.get_current_info_shares_and_etfs()
 # t.get_current_info_bonds()
-t.get_currencies()
-
+# t.get_currencies()
+t.translate_to_rub()
