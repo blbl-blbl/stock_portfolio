@@ -138,7 +138,7 @@ class Portfolio(object):
         for t in range(len(types)):
             try:
                 if types[t] == 'Date':
-                    df = df.with_columns(pl.col('Date').str.to_date(format='%m-%d-%y')) # format='%Y-%m-%d'
+                    df = df.with_columns(pl.col('Date').str.to_date(format='%m-%d-%y'))
                 else:
                     df = df.cast({df_columns[t] : getattr(pl, types[t])})
             except Exception as e:
@@ -443,7 +443,26 @@ class Portfolio(object):
         )
 
         bonds_df = self.DatabaseManager.read_table_to_dataframe(
-            table_name='current_marketdata_bonds'
+            table_name='current_marketdata_bonds',
+            columns=[
+                'SECID',
+                'BOARDID',
+                'SHORTNAME',
+                'COUPONVALUE',
+                'NEXTCOUPON',
+                'ACCRUEDINT',
+                'LOTSIZE',
+                'FACEVALUE',
+                'STATUS',
+                'MATDATE',
+                'DECIMALS',
+                'COUPONPERIOD',
+                'ISSUESIZE',
+                'PREVDATE',
+                'SECNAME',
+                # TODO: дописать список
+
+            ]
         )
 
         print(bonds_df)
