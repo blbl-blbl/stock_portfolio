@@ -338,7 +338,7 @@ class DatabaseManager(object):
                     if limit:
                         final_sql += f" LIMIT {limit}"
 
-                df = pl.read_database(final_sql, conn, execute_options={"parameters": params})
+                df = pl.read_database(final_sql, conn, execute_options={"parameters": params}, infer_schema_length=None)
                 logger.info(f"Успешно загружено {len(df)} строк в DataFrame")
                 return df
 
