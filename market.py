@@ -3,7 +3,6 @@ import polars as pl
 from database import DatabaseManager
 import logging
 import config
-from typing import List, Any
 
 
 # Настройка логирования
