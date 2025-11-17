@@ -349,7 +349,8 @@ class Portfolio(object):
             logger.error(f"Ошибка при редактировании строки {e}")
             return False
 
-    # FIXME: Расчет полной стоимости портфеля + стоимости на дату + сейчас нет обработки фьючерсов
+    # TODO: Расчет полной стоимости портфеля + стоимости на дату + сейчас нет обработки фьючерсов
+    # Примерно правильно считает стоимость активов в валюте
     def portfolio_value(self, df: pl.DataFrame, target_date: date = date.today()):
         """
         Получение стоимости портфеля
@@ -447,6 +448,8 @@ class Portfolio(object):
 
 if __name__ == "__main__":
     port = Portfolio()
+    # Подгрузка данных из excel
+    # port.operations_history_to_sql(path='port.xlsx', operation='replace')
     data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
     quantity = port.quantity_for_active(data=data)
     # print(quantity)
