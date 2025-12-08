@@ -430,6 +430,7 @@ class Portfolio(object):
 
         # Предполагаем, что все бумаги кроме облигаций торгуются только в рублях
         # Поэтому заполняем все оставшиеся 1
+        # TODO: стоимость портфеля на дату
         df_portfolio= df_portfolio.with_columns(
                       pl.col('CURRENCY').fill_null(1)
         )
@@ -443,7 +444,18 @@ class Portfolio(object):
             logger.error('Возникла ошибка при расчете стоимости каждой позиции в портеле')
             raise e
 
+        print(self.full_portfolio_values(df=df_portfolio))
+
         print(df_portfolio)
+
+    def full_portfolio_values(self, df:pl.DataFrame, sum_column:str = 'Posittion Value') -> str:
+        """
+        Полная стоимость портфеля
+        :param df: pl.DataFrame: (из функции portfolio_value) датафрейм с данными
+        :param sum_column: str: столбец по которому происходит суммирование
+        :return: str: текущая стоимость портфеля
+        """
+        return f"Стоимость портфеля: {int(df[sum_column].sum())} рублей"
 
 
 if __name__ == "__main__":
