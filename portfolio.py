@@ -438,17 +438,17 @@ class Portfolio(object):
         # Расчет стоимости каждой позиции в портфеле
         try:
             df_portfolio = df_portfolio.with_columns(
-                (pl.col('Quantity') * pl.col('MARKETPRICE') * pl.col('CURRENCY')).alias('Posittion Value')
+                (pl.col('Quantity') * pl.col('MARKETPRICE') * pl.col('CURRENCY')).alias('Position Value')
             )
         except Exception as e:
             logger.error('Возникла ошибка при расчете стоимости каждой позиции в портеле')
             raise e
 
-        print(self.full_portfolio_values(df=df_portfolio))
+        print(self.full_portfolio_values(df=df_portfolio, sum_column='Position Value'))
 
         print(df_portfolio)
 
-    def full_portfolio_values(self, df:pl.DataFrame, sum_column:str = 'Posittion Value') -> str:
+    def full_portfolio_values(self, df:pl.DataFrame, sum_column:str) -> str:
         """
         Полная стоимость портфеля
         :param df: pl.DataFrame: (из функции portfolio_value) датафрейм с данными
