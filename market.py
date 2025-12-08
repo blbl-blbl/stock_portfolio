@@ -348,7 +348,7 @@ class Marketdata(object):
 
 
 t = Marketdata()
-# t.get_current_info_shares_and_etfs()
-# t.get_current_info_bonds()
-# t.get_currencies()
+t.get_current_info_shares_and_etfs()
+t.get_current_info_bonds()
+t.get_currencies()
 t.translate_to_rub()

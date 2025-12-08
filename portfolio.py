@@ -349,7 +349,7 @@ class Portfolio(object):
             logger.error(f"Ошибка при редактировании строки {e}")
             return False
 
-    # TODO: Расчет полной стоимости портфеля + стоимости на дату + сейчас нет обработки фьючерсов
+    # TODO: стоимости на дату + сейчас нет обработки фьючерсов
     # Примерно правильно считает стоимость активов в валюте
     def portfolio_value(self, df: pl.DataFrame, target_date: date = date.today()):
         """
@@ -457,13 +457,25 @@ class Portfolio(object):
         """
         return f"Стоимость портфеля: {int(df[sum_column].sum())} рублей"
 
+    def average_price(self):
+        """
+        Нахождение средней цены покупки / продажи
+        :param df: pl.DataFrame: история операций
+        :return:
+        """
+        data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+        unique_secid = data['SECID'].unique()
+
+
+
 
 if __name__ == "__main__":
     port = Portfolio()
-    # Подгрузка данных из excel
-    # port.operations_history_to_sql(path='port.xlsx', operation='replace')
-    data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
-    quantity = port.quantity_for_active(data=data)
-    # print(quantity)
-    print(port.portfolio_value(df=quantity))
+    # # Подгрузка данных из excel
+    # # port.operations_history_to_sql(path='port.xlsx', operation='replace')
+    # data = port.DatabaseManager.read_table_to_dataframe(table_name='operations_history')
+    # quantity = port.quantity_for_active(data=data)
+    # # print(quantity)
+    # print(port.portfolio_value(df=quantity))
+    print(port.average_price())
 
