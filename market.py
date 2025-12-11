@@ -4,6 +4,8 @@ from database import DatabaseManager
 import logging
 import config
 from datetime import datetime, date, timedelta
+from tqdm import tqdm
+import pandas as pd
 
 
 # Настройка логирования
@@ -400,11 +402,11 @@ class Marketdata(object):
                 currencies[val1] = val2
 
             return currencies
-        return None
+        return False
 
 
     def history_currency(self, start_year:int = 2000,
-                         end_year = datetime.now().year + 1,
+                         end_year = datetime.now().year,
                          operation:str = 'append'):
         """
         Парсинг истории валютных курсов
@@ -428,35 +430,60 @@ class Marketdata(object):
             currencies_secids = list(currencies.keys())
 
 
-            #:TODO здесь цикл по каждой бумаге и по каждому году
 
-            secid = currencies_secids[1]
 
-            date_prices_json = self.get_conn(
-                url=f'https://iss.moex.com/iss/engines/currency/markets/index/securities/{secid}/candles.json?from={start_year}-01-01&till={end_year}-12-31&interval=24'
-            )
+            # УДАЛИТЬ!!
+            # currencies_secids = currencies_secids[:4]
+            currencies_secids = currencies_secids[4:5]
 
-            date_prices_json = date_prices_json['candles']['data']
+            full_df = pd.DataFrame()
 
-            date_prices_dict_old = self.marketdata_proccesing(data=date_prices_json, first_ind=7, second_ind=1)
+            for secid in tqdm(currencies_secids):
+                secid_df = pd.DataFrame()
+                for year in range(start_year, end_year+1):
 
-            date_prices_dict_new = {}
+                    date_prices_json = self.get_conn(
+                        url=f'https://iss.moex.com/iss/engines/currency/markets/index/securities/{secid}/candles.json?from={year}-01-01&till={year}-12-31&interval=24'
+                    )
 
-            # Каждый ключ преобразуем из формата str "%Y-%m-%d %H:%M:%S" в datetime "%Y-%m-%d"
-            for key, value in date_prices_dict_old.items():
-                new_key = self.str_to_datetime(key,
-                                               format_code="%Y-%m-%d %H:%M:%S")
-                date_prices_dict_new[new_key] = value
+                    date_prices_json = date_prices_json['candles']['data']
+                    date_prices_dict_old = self.marketdata_proccesing(data=date_prices_json, first_ind=7, second_ind=1)
 
+                    if not date_prices_dict_old:
+                        continue
+
+                    # print(date_prices_dict_old)
+
+                    date_prices_dict_new = {}
+
+                    # Каждый ключ преобразуем из формата str "%Y-%m-%d %H:%M:%S" в datetime "%Y-%m-%d"
+                    for key, value in date_prices_dict_old.items():
+                        new_key = self.str_to_datetime(key,
+                                                       format_code="%Y-%m-%d %H:%M:%S")
+                        date_prices_dict_new[new_key] = value
+
+                    # print(date_prices_dict_new)
+
+                    df = pd.DataFrame(list(date_prices_dict_new.items()), columns=['date', secid])
+                    secid_df = pd.concat([secid_df, df], ignore_index=True)
+
+
+                if full_df.empty:
+                    full_df = secid_df
+                else:
+                    full_df = pd.merge(full_df, secid_df, on='date', how='outer')
+
+            print(full_df)
 
 
 
         except Exception as Ex:
             print(Ex)
+            raise Ex
 
 t = Marketdata()
 # t.get_current_info_shares_and_etfs()
 # t.get_current_info_bonds()
 # t.get_currencies()
 # t.translate_to_rub()
-t.history_currency()
+t.history_currency(start_year=2025)
