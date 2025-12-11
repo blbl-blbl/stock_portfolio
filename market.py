@@ -347,8 +347,8 @@ class Marketdata(object):
 
         logger.info('Курсы валют успешно добавлены в базу данных')
 
-
-    def get_conn(self, url:str, try_count:int=5):
+    @staticmethod
+    def get_conn(url:str, try_count:int=5):
         """
         Установление подключения
 
@@ -424,10 +424,29 @@ class Marketdata(object):
 
 
             cur_data = data['securities']['data']
-
             currencies = self.marketdata_proccesing(data=cur_data, first_ind=1, second_ind=4)
-
             currencies_secids = list(currencies.keys())
+
+
+            #:TODO здесь цикл по каждой бумаге и по каждому году
+
+            secid = currencies_secids[1]
+
+            date_prices_json = self.get_conn(
+                url=f'https://iss.moex.com/iss/engines/currency/markets/index/securities/{secid}/candles.json?from={start_year}-01-01&till={end_year}-12-31&interval=24'
+            )
+
+            date_prices_json = date_prices_json['candles']['data']
+
+            date_prices_dict_old = self.marketdata_proccesing(data=date_prices_json, first_ind=7, second_ind=1)
+
+            date_prices_dict_new = {}
+
+            # Каждый ключ преобразуем из формата str "%Y-%m-%d %H:%M:%S" в datetime "%Y-%m-%d"
+            for key, value in date_prices_dict_old.items():
+                new_key = self.str_to_datetime(key,
+                                               format_code="%Y-%m-%d %H:%M:%S")
+                date_prices_dict_new[new_key] = value
 
 
 
