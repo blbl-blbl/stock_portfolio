@@ -382,8 +382,8 @@ class Marketdata(object):
         Извлечение данных о цене и дате из json
 
         :param data: json-формат
-        :param price_ind: int: индекс столбца с ценой
-        :param date_ind: int: индекс столбца с датой
+        :param first_ind: int: индекс столбца с ценой
+        :param second_ind: int: индекс столбца с датой
         :return:
         """
 
