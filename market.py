@@ -379,7 +379,7 @@ class Marketdata(object):
         return date_object
 
     @staticmethod
-    def marketdata_proccesing( data, first_ind:int, second_ind:int):
+    def marketdata_proccesing(data, first_ind:int, second_ind:int):
         """
         Извлечение данных о цене и дате из json
 
@@ -403,10 +403,16 @@ class Marketdata(object):
         return None
 
 
-    def history_currency(self):
+    def history_currency(self, start_year:int = 2000,
+                         end_year = datetime.now().year + 1,
+                         operation:str = 'append'):
         """
         Парсинг истории валютных курсов
 
+        :param start_year: int: год начала сбора данных (по умолчанию 2000 год)
+        :param end_year: int: год окончания сбора данных + 1 (по умолчанию текущий год + 1)
+        :param operation: str: тип операции - замена ('replace') или добавление ('append')
+            (по умолчанию 'replace')
         :return:
         """
 
@@ -419,11 +425,11 @@ class Marketdata(object):
 
             cur_data = data['securities']['data']
 
-            currencies = self.marketdata_proccesing(data=cur_data, first_ind=1, second_ind=2)
+            currencies = self.marketdata_proccesing(data=cur_data, first_ind=1, second_ind=4)
 
             currencies_secids = list(currencies.keys())
 
-            # TODO тут пишу
+
 
 
         except Exception as Ex:
