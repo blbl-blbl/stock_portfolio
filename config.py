@@ -22,3 +22,5 @@ DEFAULT_BONDS = ['TQRD', 'TQUD']
 # Ссылка на API Мосбиржии для сбора данных по валютам
 currencies_url = 'https://iss.moex.com/iss/engines/currency/markets/index/securities.json'
 
+# История
+history_currency_url = 'https://iss.moex.com/iss/engines/currency/markets/index/securities.json'

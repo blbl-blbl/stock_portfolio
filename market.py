@@ -20,6 +20,7 @@ class Marketdata(object):
         self.BOARDID_BONDS = config.BOARDID_BONDS
         self.DEFAULT_BONDS = config.DEFAULT_BONDS
         self.currencies_url = config.currencies_url
+        self.history_currency_url = config.history_currency_url
 
 
     def get_current_info_shares_and_etfs(self) -> bool:
@@ -346,6 +347,38 @@ class Marketdata(object):
 
         logger.info('Курсы валют успешно добавлены в базу данных')
 
+
+    def get_conn(self, url:str, try_count:int=5):
+        """
+        Установление подключения
+
+        :param url: str: url-адресс для подлкючения
+        :param try_count: int: количество попыток подключения
+        :return: str: json формат страницы
+        """
+
+        for i in range(try_count):
+            try:
+                response = requests.get(url)
+                data = response.json()
+                return data
+            except:
+                continue
+        return False
+
+
+    def history_currency(self):
+        """
+        Парсинг истории валют
+
+        :return:
+        """
+
+        try:
+            data = self.get_conn(self.history_currency_url)
+
+        except Exception as Ex:
+            print(Ex)
 
 t = Marketdata()
 t.get_current_info_shares_and_etfs()
