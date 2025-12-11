@@ -3,6 +3,7 @@ import polars as pl
 from database import DatabaseManager
 import logging
 import config
+from datetime import datetime, date, timedelta
 
 
 # Настройка логирования
@@ -366,16 +367,32 @@ class Marketdata(object):
                 continue
         return False
 
+    def str_to_datetime(self, date_string: str, format_code: str):
+        """ Преобразует строку в datetime формат
+
+        :param date_string: str: строка даты
+        :param format_code: str: формат в котором подана строка. Например "%Y-%m-%d %H:%M:%S"
+        """
+
+        datetime_object = datetime.strptime(date_string, format_code)
+        date_object = datetime_object.date()
+        return date_object
+
 
     def history_currency(self):
         """
-        Парсинг истории валют
+        Парсинг истории валютных курсов
 
         :return:
         """
 
         try:
             data = self.get_conn(self.history_currency_url)
+            if not data:
+                print("Не удалось подключиться к API Мосбиржи")
+                return False
+
+
 
         except Exception as Ex:
             print(Ex)
