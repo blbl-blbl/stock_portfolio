@@ -366,7 +366,8 @@ class Marketdata(object):
                 continue
         return False
 
-    def str_to_datetime(self, date_string: str, format_code: str):
+    @staticmethod
+    def str_to_datetime(date_string: str, format_code: str):
         """ Преобразует строку в datetime формат
 
         :param date_string: str: строка даты
@@ -377,7 +378,8 @@ class Marketdata(object):
         date_object = datetime_object.date()
         return date_object
 
-    def marketdata_proccesing(self, data, first_ind:int, second_ind:int):
+    @staticmethod
+    def marketdata_proccesing( data, first_ind:int, second_ind:int):
         """
         Извлечение данных о цене и дате из json
 
@@ -420,6 +422,8 @@ class Marketdata(object):
             currencies = self.marketdata_proccesing(data=cur_data, first_ind=1, second_ind=2)
 
             currencies_secids = list(currencies.keys())
+
+            # TODO тут пишу
 
 
         except Exception as Ex:
