@@ -21,7 +21,6 @@ class Marketdata(object):
         self.BOARDID_BONDS = config.BOARDID_BONDS
         self.DEFAULT_BONDS = config.DEFAULT_BONDS
         self.currencies_url = config.currencies_url
-        self.history_currency_url = config.history_currency_url
 
 
     def get_current_info_shares_and_etfs(self) -> bool:
@@ -378,6 +377,29 @@ class Marketdata(object):
         date_object = datetime_object.date()
         return date_object
 
+    def marketdata_proccesing(self, data, first_ind:int, second_ind:int):
+        """
+        Извлечение данных о цене и дате из json
+
+        :param data: json-формат
+        :param price_ind: int: индекс столбца с ценой
+        :param date_ind: int: индекс столбца с датой
+        :return:
+        """
+
+        # Словарь в котором secid : название валюты
+        currencies = {}
+
+        if data:
+            for i in range(len(data)):
+                val1 = data[i][first_ind]
+                val2 = data[i][second_ind]
+
+                currencies[val1] = val2
+
+            return currencies
+        return None
+
 
     def history_currency(self):
         """
@@ -387,18 +409,25 @@ class Marketdata(object):
         """
 
         try:
-            data = self.get_conn(self.history_currency_url)
+            data = self.get_conn(self.currencies_url)
             if not data:
                 print("Не удалось подключиться к API Мосбиржи")
                 return False
 
+
+            cur_data = data['securities']['data']
+
+            currencies = self.marketdata_proccesing(data=cur_data, first_ind=1, second_ind=2)
+
+            currencies_secids = list(currencies.keys())
 
 
         except Exception as Ex:
             print(Ex)
 
 t = Marketdata()
-t.get_current_info_shares_and_etfs()
-t.get_current_info_bonds()
-t.get_currencies()
-t.translate_to_rub()
+# t.get_current_info_shares_and_etfs()
+# t.get_current_info_bonds()
+# t.get_currencies()
+# t.translate_to_rub()
+t.history_currency()
