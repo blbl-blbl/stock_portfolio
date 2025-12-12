@@ -429,13 +429,6 @@ class Marketdata(object):
             currencies = self.marketdata_proccesing(data=cur_data, first_ind=1, second_ind=4)
             currencies_secids = list(currencies.keys())
 
-
-
-
-            # УДАЛИТЬ!!
-            # currencies_secids = currencies_secids[:4]
-            currencies_secids = currencies_secids[4:5]
-
             full_df = pd.DataFrame()
 
             for secid in tqdm(currencies_secids):
@@ -452,7 +445,6 @@ class Marketdata(object):
                     if not date_prices_dict_old:
                         continue
 
-                    # print(date_prices_dict_old)
 
                     date_prices_dict_new = {}
 
@@ -462,20 +454,15 @@ class Marketdata(object):
                                                        format_code="%Y-%m-%d %H:%M:%S")
                         date_prices_dict_new[new_key] = value
 
-                    # print(date_prices_dict_new)
-
                     df = pd.DataFrame(list(date_prices_dict_new.items()), columns=['date', secid])
                     secid_df = pd.concat([secid_df, df], ignore_index=True)
 
 
-                if full_df.empty:
-                    full_df = secid_df
-                else:
-                    full_df = pd.merge(full_df, secid_df, on='date', how='outer')
-
-            print(full_df)
-
-
+                if not secid_df.empty:
+                    if full_df.empty:
+                        full_df = secid_df
+                    else:
+                        full_df = pd.merge(full_df, secid_df, on='date', how='outer')
 
         except Exception as Ex:
             print(Ex)
@@ -486,4 +473,4 @@ t = Marketdata()
 # t.get_current_info_bonds()
 # t.get_currencies()
 # t.translate_to_rub()
-t.history_currency(start_year=2025)
+t.history_currency(start_year=2023)
