@@ -16,8 +16,8 @@ class Marketdata(object):
     def __init__(self):
         # Пока что сделал все в одной базе данных, потом нужно подумать как лучше
         self.DBS = DatabaseManager(db_path='database.db')
-        self.DEFAULT_BONDS = config.DEFAULT_BONDS
         self.urls_settings = config.urls_settings
+        self.split_url = config.split_url
 
 
     def translate_to_rub(self):
@@ -207,10 +207,32 @@ class Marketdata(object):
             logger.error(f"Возникла ошибка {Ex}")
             raise Ex
 
+
     def get_splits_history(self):
         """ Получение информации о дроблении / консолидации бумаг фондового рынка """
 
+        try:
+            split_data_json = self.get_conn(url=self.split_url)
+            split_data_json_cutted = split_data_json['splits']['data']
 
+            for i in range(len(split_data_json_cutted)):
+                tradedate = self.str_to_datetime(split_data_json_cutted[i][0],
+                                                 format_code="%Y-%m-%d %H:%M:%S")
+                secid = split_data_json_cutted[i][1]
+                quantity_before = split_data_json_cutted[i][2]
+                quantity_after = split_data_json_cutted[i][3]
+
+
+
+
+
+
+
+
+
+        except Exception as ex:
+            logger.error(f'Возникла ошибка при получении информации о дроблении / консолидации \n {ex}')
+            raise ex
 
 t = Marketdata()
 # t.get_current_info_shares_and_etfs()
