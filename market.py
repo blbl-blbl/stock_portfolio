@@ -18,6 +18,7 @@ class Marketdata(object):
         self.DBS = DatabaseManager(db_path='database.db')
         self.urls_settings = config.urls_settings
         self.split_url = config.split_url
+        self.rename_url = config.rename_url
 
 
     def translate_to_rub(self):
@@ -207,11 +208,20 @@ class Marketdata(object):
 
 
     def get_splits_history(self):
-        """ Получение информации о дроблении / консолидации бумаг фондового рынка """
+        """
+        Получение информации о дроблении / консолидации бумаг фондового рынка
+
+        :return
+        """
 
         try:
 
             split_data_json = self.get_conn(url=self.split_url)
+
+            if split_data_json == False:
+                logger.error('Не удалось подключиться к API Мосбиржи для парсинга информации по сплитам')
+                return False
+
             split_data_json_cutted = split_data_json['splits']['data']
 
             data = {}
@@ -243,9 +253,36 @@ class Marketdata(object):
                                             table_name='split_info',
                                             if_exists='replace')
 
+            logger.info("Информация о дроблении / консолидации бумаг фондового рынка обновлена")
+            return True
+
         except Exception as ex:
             logger.error(f'Возникла ошибка при получении информации о дроблении / консолидации \n {ex}')
-            raise ex
+            return False
+
+
+    def get_changeover_history(self):
+        """
+        Получение информации по техническому изменению торговых кодов
+
+        :return:
+        """
+
+        try:
+            changeover_json = self.get_conn(url=self.rename_url)
+
+            if changeover_json == False:
+                logger.error('Не удалось подключиться к API Мосбиржи для парсинга информации по сплитам')
+                return False
+
+            # TODO: тут остановился
+
+        except Exception as ex:
+            logger.error(f'Возникла ошибка при получении информации о дроблении / консолидации \n {ex}')
+            return False
+
+
+
 
 t = Marketdata()
 # t.get_current_info_shares_and_etfs()
