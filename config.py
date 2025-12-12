@@ -13,8 +13,8 @@ currencies_url = 'https://iss.moex.com/iss/engines/currency/markets/index/securi
 # Данные для парсинга с маркетдаты. Формат:
 # тип актива: ['engine в маркетдате', 'market в маркетдате', 'название таблицы для sql']
 urls_settings = {'currency' : ['currency', 'index', 'marketdata_currency', 1, 4, currencies_url],
-                 'shares' : ['stock', 'shares', 'marketdataSares', 0, 2, shares_url],
-                 'bonds' : ['stock', 'bonds', 'marketdataBonds', 0, 2, bonds_url]}
+                 'shares' : ['stock', 'shares', 'marketdata_shares', 0, 2, shares_url],
+                 'bonds' : ['stock', 'bonds', 'marketdata_bonds', 0, 2, bonds_url]}
 
 # Информцация о дроблении / консолидации фондового рынка
 split_url = 'https://iss.moex.com/iss/statistics/engines/stock/splits.json'
