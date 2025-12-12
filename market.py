@@ -3,7 +3,7 @@ import polars as pl
 from database import DatabaseManager
 import logging
 import config
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from tqdm import tqdm
 import pandas as pd
 
@@ -406,24 +406,28 @@ class Marketdata(object):
         return False
 
 
-    def history_currency(self, operation:str, start_year:int = 2000,
+    def history_currency(self, operation:str,
+                         start_date:date = date(year=2000, month=1, day=1),
                          end_year = datetime.now().year):
         """
-        Парсинг истории валютных курсов
+        Парсинг валютных курсов
 
-        :param start_year: int: год начала сбора данных (по умолчанию 2000 год)
+        :param start_date: int: год начала сбора данных (по умолчанию 2000 год)
         :param end_year: int: год окончания сбора данных + 1 (по умолчанию текущий год + 1)
         :param operation: str: тип операции - замена ('replace') или добавление ('append')
-            (по умолчанию 'replace')
         :return:
         """
 
         try:
+            start_year = start_date.year
+            start_month = start_date.month
+            start_day = start_date.day
+
+
             data = self.get_conn(self.currencies_url)
             if not data:
                 print("Не удалось подключиться к API Мосбиржи")
                 return False
-
 
             cur_data = data['securities']['data']
             currencies = self.marketdata_proccesing(data=cur_data, first_ind=1, second_ind=4)
@@ -437,9 +441,15 @@ class Marketdata(object):
 
                 for year in range(start_year, end_year+1):
 
-                    date_prices_json = self.get_conn(
-                        url=f'https://iss.moex.com/iss/engines/currency/markets/index/securities/{secid}/candles.json?from={year}-01-01&till={year}-12-31&interval=24'
-                    )
+                    # 1 год парсим с определенной даты, а все последующие годы с 1 января
+                    if year == start_year:
+                        date_prices_json = self.get_conn(
+                            url=f'https://iss.moex.com/iss/engines/currency/markets/index/securities/{secid}/candles.json?from={year}-{start_month}-{start_day}&till={year}-12-31&interval=24'
+                        )
+                    else:
+                        date_prices_json = self.get_conn(
+                            url=f'https://iss.moex.com/iss/engines/currency/markets/index/securities/{secid}/candles.json?from={year}-01-01&till={year}-12-31&interval=24'
+                        )
 
                     date_prices_json = date_prices_json['candles']['data']
                     date_prices_dict_old = self.marketdata_proccesing(data=date_prices_json, first_ind=7, second_ind=1)
@@ -485,4 +495,4 @@ t = Marketdata()
 # t.get_current_info_bonds()
 # t.get_currencies()
 # t.translate_to_rub()
-t.history_currency(operation='replace', start_year=2000)
+t.history_currency(operation='replace')
