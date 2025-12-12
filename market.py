@@ -196,8 +196,6 @@ class Marketdata(object):
             # Перевод в датафрейм поларс
             polars_dataframe = pl.from_pandas(full_df)
 
-            polars_dataframe.write_excel('output.xlsx')
-
             # Сохранение в SQL
             self.DBS.add_dataframe_to_table(df=polars_dataframe,
                                             table_name=table_name,
@@ -212,23 +210,38 @@ class Marketdata(object):
         """ Получение информации о дроблении / консолидации бумаг фондового рынка """
 
         try:
+
             split_data_json = self.get_conn(url=self.split_url)
             split_data_json_cutted = split_data_json['splits']['data']
 
+            data = {}
+
             for i in range(len(split_data_json_cutted)):
                 tradedate = self.str_to_datetime(split_data_json_cutted[i][0],
-                                                 format_code="%Y-%m-%d %H:%M:%S")
+                                                 format_code="%Y-%m-%d")
                 secid = split_data_json_cutted[i][1]
                 quantity_before = split_data_json_cutted[i][2]
                 quantity_after = split_data_json_cutted[i][3]
 
+                data[secid] = [tradedate, quantity_before, quantity_after]
 
+            df = pd.DataFrame([
+                {
+                    'date': values[0],
+                    'secid': secid,
+                    'quantity_before': values[1],
+                    'quantity_after': values[2]
+                }
+                for secid, values in data.items()
+            ])
 
+            # Перевод в датафрейм поларс
+            polars_dataframe = pl.from_pandas(df)
 
-
-
-
-
+            # Сохранение в SQL
+            self.DBS.add_dataframe_to_table(df=polars_dataframe,
+                                            table_name='split_info',
+                                            if_exists='replace')
 
         except Exception as ex:
             logger.error(f'Возникла ошибка при получении информации о дроблении / консолидации \n {ex}')
@@ -239,6 +252,6 @@ t = Marketdata()
 # t.get_current_info_bonds()
 # t.get_currencies()
 # t.translate_to_rub()
-t.get_price_history(operation='replace', active_type='shares')
-# , start_date=date(2025, 1,1)
+# t.get_price_history(operation='replace', active_type='shares')
+t.get_splits_history()
 
