@@ -366,6 +366,7 @@ class Marketdata(object):
                 return data
             except:
                 continue
+        logger.error(f"Не удалось подключиться к API мосбиржи по ссылке {url}")
         return False
 
     @staticmethod
@@ -405,9 +406,8 @@ class Marketdata(object):
         return False
 
 
-    def history_currency(self, start_year:int = 2000,
-                         end_year = datetime.now().year,
-                         operation:str = 'append'):
+    def history_currency(self, operation:str, start_year:int = 2000,
+                         end_year = datetime.now().year):
         """
         Парсинг истории валютных курсов
 
@@ -432,7 +432,9 @@ class Marketdata(object):
             full_df = pd.DataFrame()
 
             for secid in tqdm(currencies_secids):
+                logger.info(f"Начат сбор данных по {secid}")
                 secid_df = pd.DataFrame()
+
                 for year in range(start_year, end_year+1):
 
                     date_prices_json = self.get_conn(
@@ -445,7 +447,6 @@ class Marketdata(object):
                     if not date_prices_dict_old:
                         continue
 
-
                     date_prices_dict_new = {}
 
                     # Каждый ключ преобразуем из формата str "%Y-%m-%d %H:%M:%S" в datetime "%Y-%m-%d"
@@ -455,17 +456,28 @@ class Marketdata(object):
                         date_prices_dict_new[new_key] = value
 
                     df = pd.DataFrame(list(date_prices_dict_new.items()), columns=['date', secid])
+
+                    # Присоединение данных за год
                     secid_df = pd.concat([secid_df, df], ignore_index=True)
+                    logger.info(f"Собраны данные по {secid} за год {year}")
 
-
+                # Объединение данных по валюте в датафрейм
                 if not secid_df.empty:
                     if full_df.empty:
                         full_df = secid_df
                     else:
                         full_df = pd.merge(full_df, secid_df, on='date', how='outer')
 
+            # Перевод в датафрейм поларс
+            polars_dataframe = pl.from_pandas(full_df)
+
+            # Сохранение в SQL
+            self.DBS.add_dataframe_to_table(df=polars_dataframe,
+                                            table_name='marketdata_currency',
+                                            if_exists=operation)
+
         except Exception as Ex:
-            print(Ex)
+            logger.error(f"Возникла ошибка {Ex}")
             raise Ex
 
 t = Marketdata()
@@ -473,4 +485,4 @@ t = Marketdata()
 # t.get_current_info_bonds()
 # t.get_currencies()
 # t.translate_to_rub()
-t.history_currency(start_year=2023)
+t.history_currency(operation='replace', start_year=2000)
